@@ -30,9 +30,18 @@ describe('TrafficPredictionAgent', () => {
     expect((result.output as { predicted: boolean }).predicted).toBe(false);
   });
 
-  it('fails (spike predicted) for elevated traffic', async () => {
+  it('does not predict a spike when score stays at or below 0.7', async () => {
     const result = await agent.execute(makeCtx({
       perfLog: { p50Latency: 200, p99Latency: 900, errorRate: 0.02, throughput: 8000 }
+    }));
+    expect(result.status).toBe('success');
+    expect((result.output as { predicted: boolean }).predicted).toBe(false);
+    expect(result.escalate).toBeFalsy();
+  });
+
+  it('fails (spike predicted) for elevated traffic', async () => {
+    const result = await agent.execute(makeCtx({
+      perfLog: { p50Latency: 200, p99Latency: 900, errorRate: 0.02, throughput: 9000 }
     }));
     expect(result.status).toBe('failure');
     expect((result.output as { predicted: boolean }).predicted).toBe(true);
@@ -46,11 +55,14 @@ describe('TrafficPredictionAgent', () => {
     expect(result.escalate).toBe(true);
   });
 
-  it('output always contains score and recommendation', async () => {
+  it('output always contains score, recommendation, p99Latency and throughput', async () => {
     const result = await agent.execute(makeCtx({
       perfLog: { p50Latency: 50, p99Latency: 200, errorRate: 0.01, throughput: 1000 }
     }));
-    expect(typeof (result.output as { score: number }).score).toBe('number');
-    expect(typeof (result.output as { recommendation: string }).recommendation).toBe('string');
+    const out = result.output as { score: number; recommendation: string; p99Latency: number; throughput: number };
+    expect(typeof out.score).toBe('number');
+    expect(typeof out.recommendation).toBe('string');
+    expect(out.p99Latency).toBe(200);
+    expect(out.throughput).toBe(1000);
   });
 });

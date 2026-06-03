@@ -4,14 +4,6 @@ import type { AgentContext, AgentResult, PerfLogInput, ServiceInputs } from '@op
 const THROUGHPUT_SPIKE_THRESHOLD = 10_000;
 const P99_DEGRADATION_THRESHOLD = 1_000;
 const ERROR_RATE_THRESHOLD = 0.05;
-const PREDICTION_THRESHOLD = 0.7;
-const NEAR_PREDICTION_SCORE_THRESHOLD = 0.69;
-const ESCALATION_SCORE_THRESHOLD = 1.2;
-const ELEVATED_P99_LATENCY_THRESHOLD = 900;
-const ELEVATED_THROUGHPUT_THRESHOLD = 8_000;
-const LATENCY_RISK_WEIGHT = 0.5;
-const THROUGHPUT_RISK_WEIGHT = 0.3;
-const ERROR_RATE_WEIGHT = 0.2;
 
 export interface TrafficPredictionOutput {
   predicted: boolean;
@@ -45,16 +37,12 @@ export class TrafficPredictionAgent extends BaseAgent {
 
     const latencyRisk = perfLog.p99Latency / P99_DEGRADATION_THRESHOLD;
     const throughputRisk = perfLog.throughput / THROUGHPUT_SPIKE_THRESHOLD;
-    const score = latencyRisk * LATENCY_RISK_WEIGHT
-      + throughputRisk * THROUGHPUT_RISK_WEIGHT
-      + perfLog.errorRate * ERROR_RATE_WEIGHT;
+    const score = latencyRisk * 0.5
+      + throughputRisk * 0.3
+      + perfLog.errorRate * 0.2;
 
-    const predicted = score > PREDICTION_THRESHOLD || (
-      score >= NEAR_PREDICTION_SCORE_THRESHOLD
-      && perfLog.p99Latency >= ELEVATED_P99_LATENCY_THRESHOLD
-      && perfLog.throughput >= ELEVATED_THROUGHPUT_THRESHOLD
-    );
-    const escalate = score > ESCALATION_SCORE_THRESHOLD || perfLog.errorRate > ERROR_RATE_THRESHOLD;
+    const predicted = score > 0.7;
+    const escalate = score > 1.2 || perfLog.errorRate > ERROR_RATE_THRESHOLD;
 
     const recommendation = escalate
       ? 'Critical traffic pattern — immediate scale-out required'
