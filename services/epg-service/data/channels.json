@@ -1,0 +1,5 @@
+[
+  { "id": "bbc-one", "name": "BBC One", "region": "UK" },
+  { "id": "itv", "name": "ITV", "region": "UK" },
+  { "id": "channel-4", "name": "Channel 4", "region": "UK" }
+]

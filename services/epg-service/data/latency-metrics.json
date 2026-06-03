@@ -1,0 +1,13 @@
+{
+  "service": "epg-service",
+  "timestamp": "2024-01-15T21:05:00Z",
+  "metrics": {
+    "p50_ms": 245,
+    "p95_ms": 890,
+    "p99_ms": 3200,
+    "error_rate": 0.34,
+    "requests_per_second": 1250
+  },
+  "anomaly": true,
+  "message": "Error rate spike from 0.2% to 34% after deploy v2.3.1"
+}

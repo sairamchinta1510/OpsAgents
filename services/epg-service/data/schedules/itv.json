@@ -1,0 +1,7 @@
+{
+  "channel": { "id": "itv", "name": "ITV", "region": "UK" },
+  "programmes": [
+    { "channel_id": "itv", "title": "Coronation Street", "start_time": "2024-01-15T19:30:00Z", "end_time": "2024-01-15T20:00:00Z", "category": "Drama" },
+    { "channel_id": "itv", "title": "ITV News", "start_time": "2024-01-15T22:00:00Z", "end_time": "2024-01-15T22:30:00Z", "category": "News" }
+  ]
+}
