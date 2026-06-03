@@ -16,10 +16,11 @@ describe('AgentCategory', () => {
 });
 
 describe('AgentStatus', () => {
-  it('has idle, running, error statuses', () => {
+  it('has all four statuses', () => {
     expect(AgentStatus.IDLE).toBe('idle');
     expect(AgentStatus.RUNNING).toBe('running');
     expect(AgentStatus.ERROR).toBe('error');
+    expect(AgentStatus.DISABLED).toBe('disabled');
   });
 });
 
