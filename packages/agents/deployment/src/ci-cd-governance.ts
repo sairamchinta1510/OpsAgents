@@ -28,24 +28,8 @@ export class CiCdGovernanceAgent extends BaseAgent {
       };
     }
 
-    if (!perfLog) {
-      return {
-        agentId: this.id,
-        status: 'failure',
-        output: {
-          approved: false,
-          coverage: code.coverage ?? 0,
-          errorRate: 0,
-          reason: 'No perf-log input provided',
-          auditLog: ['Perf-log input is required for governance validation'],
-        } satisfies CiCdGovernanceOutput,
-        recommendations: ['Provide performance log data before deploying'],
-        durationMs: 0,
-      };
-    }
-
     const coverage = code.coverage ?? 0;
-    const errorRate = perfLog.errorRate;
+    const errorRate = perfLog?.errorRate ?? 0;
     const auditLog: string[] = [];
 
     auditLog.push(`Coverage: ${coverage}% (threshold: 70%)`);

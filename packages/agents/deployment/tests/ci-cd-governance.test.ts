@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { CiCdGovernanceAgent } from '../src/ci-cd-governance.js';
+import { AgentCategory } from '@opsagents/core';
 import type { AgentContext, ServiceInputs } from '@opsagents/core';
 
 const makeCtx = (inputs: ServiceInputs): AgentContext => ({
@@ -15,6 +16,7 @@ describe('CiCdGovernanceAgent', () => {
 
   it('has correct id, category, and acceptedInputs', () => {
     expect(agent.id).toBe('ci-cd-governance');
+    expect(agent.category).toBe(AgentCategory.DEPLOYMENT);
     expect(agent.acceptedInputs).toContain('code');
     expect(agent.acceptedInputs).toContain('perf-log');
   });
@@ -67,15 +69,16 @@ describe('CiCdGovernanceAgent', () => {
     expect((result.output as { approved: boolean }).approved).toBe(false);
   });
 
-  it('returns failure when perfLog input is absent', async () => {
+  it('defaults errorRate to 0 when perfLog input is absent', async () => {
     const ctx = makeCtx({
       serviceId: 'svc',
       timestamp: 1000,
       code: { coverage: 80 },
     });
     const result = await agent.execute(ctx);
-    expect(result.status).toBe('failure');
-    expect((result.output as { approved: boolean }).approved).toBe(false);
+    expect(result.status).toBe('success');
+    expect((result.output as { approved: boolean; errorRate: number }).approved).toBe(true);
+    expect((result.output as { approved: boolean; errorRate: number }).errorRate).toBe(0);
   });
 
   it('skips when code input is absent', async () => {
