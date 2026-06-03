@@ -51,6 +51,7 @@ export interface ServiceInputs {
   monitors?: MonitorInput;
   machineParams?: MachineParamsInput;
   incident?: IncidentInput;
+  codeRepo?: string; // e.g. "owner/repo-name" — used by CodeFixAgent to create PRs
 }
 
 // ── Agent Context & Result ───────────────────────────────────────────────────

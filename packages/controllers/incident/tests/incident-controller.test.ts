@@ -48,6 +48,7 @@ describe('IncidentController', () => {
     expect(result.status).toBe('escalated');
     expect(result.escalatedBy).toBeDefined();
     expect(result.results.some((r) => r.agentId === 'reporting')).toBe(true);
+    expect(result.results.some((r) => r.agentId === 'executive-communication')).toBe(true);
   });
 
   it('report output contains markdown and json', async () => {

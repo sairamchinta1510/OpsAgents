@@ -1,0 +1,10 @@
+{
+  "serviceId": "epg-service",
+  "codeRepo": "opsagents/epg-service",
+  "deploymentVersion": "v2.3.1",
+  "triggerReason": "EPG pipeline crash: null pointer exception on end_time field",
+  "affectedChannels": ["bbc-one", "itv", "channel-4"],
+  "impactDescription": "BBC One 21:00-23:00 schedule gap causing missing programme data. EPG pipeline crashes on null end_time.",
+  "timestamp": "2024-01-15T21:05:00Z",
+  "severity": "P1"
+}
