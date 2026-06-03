@@ -52,6 +52,22 @@ class EscalatingAgent extends BaseAgent {
   }
 }
 
+class DirectEscalateAgent extends BaseAgent {
+  readonly id = 'direct-escalate';
+  readonly name = 'Direct Escalate Agent';
+  readonly category = AgentCategory.DEPLOYMENT;
+  readonly acceptedInputs = ['monitor' as const];
+  readonly version = '0.1.0';
+
+  protected async run(_context: AgentContext): Promise<AgentResult> {
+    return {
+      agentId: this.id,
+      status: 'escalate',
+      output: { reason: 'critical' },
+    };
+  }
+}
+
 const makeContext = (overrides: Partial<AgentContext> = {}): AgentContext => ({
   sessionId: 'sess-1',
   serviceId: 'my-service',
@@ -254,6 +270,64 @@ describe('BaseAgent metrics tracking', () => {
     expect(m.invocationCount).toBe(1);
     expect(m.successCount).toBe(1);
     expect(m.escalateCount).toBe(1);
+  });
+
+  it('increments escalateCount when agent returns status=escalate directly', async () => {
+    const agent = new DirectEscalateAgent();
+    const ctx = makeContext({
+      inputs: {
+        serviceId: 'svc',
+        timestamp: 1000,
+        monitors: { cpuPercent: 50, memoryPercent: 60, diskIoMbps: 1, networkMbps: 5 },
+      },
+    });
+
+    const result = await agent.execute(ctx);
+
+    expect(result.status).toBe('escalate');
+    const m = agent.getMetrics();
+    expect(m.escalateCount).toBe(1);
+    expect(m.successCount).toBe(0);
+    expect(m.failureCount).toBe(0);
+  });
+
+  it('avgDurationMs equals totalDurationMs / invocationCount after multiple runs', async () => {
+    const agent = new EchoAgent();
+    const ctx = makeContext({
+      inputs: {
+        serviceId: 'svc',
+        timestamp: 1000,
+        monitors: { cpuPercent: 50, memoryPercent: 60, diskIoMbps: 1, networkMbps: 5 },
+      },
+    });
+
+    await agent.execute(ctx);
+    await agent.execute(ctx);
+
+    const m = agent.getMetrics();
+    expect(m.invocationCount).toBe(2);
+    expect(m.avgDurationMs).toBeCloseTo(m.totalDurationMs / 2, 5);
+  });
+
+  it('avgDurationMs accounts for skip invocations (disabled) with 0 duration', async () => {
+    const agent = new EchoAgent();
+    const ctx = makeContext({
+      inputs: {
+        serviceId: 'svc',
+        timestamp: 1000,
+        monitors: { cpuPercent: 50, memoryPercent: 60, diskIoMbps: 1, networkMbps: 5 },
+      },
+    });
+
+    agent.disable();
+    await agent.execute(ctx);
+    agent.enable();
+    await agent.execute(ctx);
+
+    const m = agent.getMetrics();
+    expect(m.invocationCount).toBe(2);
+    expect(m.avgDurationMs).toBeCloseTo(m.totalDurationMs / 2, 5);
+    expect(m.skipCount).toBe(1);
   });
 
   it('getMetrics() returns a copy with cloned Date (not mutable reference)', async () => {
