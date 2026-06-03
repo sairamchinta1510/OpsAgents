@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { DeploymentValidationAgent } from '../src/deployment-validation.js';
+import { AgentCategory } from '@opsagents/core';
 import type { AgentContext, ServiceInputs } from '@opsagents/core';
 
 const makeCtx = (inputs: ServiceInputs): AgentContext => ({
@@ -15,6 +16,7 @@ describe('DeploymentValidationAgent', () => {
 
   it('has correct id and acceptedInputs', () => {
     expect(agent.id).toBe('deployment-validation');
+    expect(agent.category).toBe(AgentCategory.DEPLOYMENT);
     expect(agent.acceptedInputs).toContain('monitor');
   });
 
@@ -66,5 +68,29 @@ describe('DeploymentValidationAgent', () => {
     const ctx = makeCtx({ serviceId: 'svc', timestamp: 1000 });
     const result = await agent.execute(ctx);
     expect(result.status).toBe('skipped');
+  });
+
+  it('returns failure at exactly cpu=85 (boundary)', async () => {
+    const ctx = makeCtx({
+      serviceId: 'svc',
+      timestamp: 1000,
+      monitors: { cpuPercent: 85, memoryPercent: 50, diskIoMbps: 10, networkMbps: 20 },
+    });
+    const result = await agent.execute(ctx);
+    expect(result.status).toBe('failure');
+    expect((result.output as { validated: boolean }).validated).toBe(false);
+    expect(result.escalate).toBeFalsy();
+  });
+
+  it('does not escalate at exactly cpu=95 (boundary — must be > 95)', async () => {
+    const ctx = makeCtx({
+      serviceId: 'svc',
+      timestamp: 1000,
+      monitors: { cpuPercent: 95, memoryPercent: 50, diskIoMbps: 10, networkMbps: 20 },
+    });
+    const result = await agent.execute(ctx);
+    // 95 is NOT > 95, so should NOT escalate — should be failure only
+    expect(result.escalate).toBeFalsy();
+    expect(result.status).toBe('failure');
   });
 });

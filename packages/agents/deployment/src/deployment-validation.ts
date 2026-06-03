@@ -1,6 +1,11 @@
 import { BaseAgent, AgentCategory } from '@opsagents/core';
 import type { AgentContext, AgentResult } from '@opsagents/core';
 
+const CPU_WARNING_THRESHOLD = 85;
+const CPU_CRITICAL_THRESHOLD = 95;
+const MEM_WARNING_THRESHOLD = 85;
+const MEM_CRITICAL_THRESHOLD = 95;
+
 export interface DeploymentValidationOutput {
   validated: boolean;
   healthScore: number;
@@ -31,7 +36,7 @@ export class DeploymentValidationAgent extends BaseAgent {
     const { cpuPercent, memoryPercent } = monitors;
     const issues: string[] = [];
 
-    if (cpuPercent > 95 || memoryPercent > 95) {
+    if (cpuPercent > CPU_CRITICAL_THRESHOLD || memoryPercent > MEM_CRITICAL_THRESHOLD) {
       return {
         agentId: this.id,
         status: 'failure',
@@ -48,10 +53,14 @@ export class DeploymentValidationAgent extends BaseAgent {
       };
     }
 
-    if (cpuPercent >= 85) issues.push(`CPU ${cpuPercent}% exceeds 85% threshold`);
-    if (memoryPercent >= 85) issues.push(`Memory ${memoryPercent}% exceeds 85% threshold`);
+    if (cpuPercent >= CPU_WARNING_THRESHOLD) {
+      issues.push(`CPU ${cpuPercent}% exceeds ${CPU_WARNING_THRESHOLD}% threshold`);
+    }
+    if (memoryPercent >= MEM_WARNING_THRESHOLD) {
+      issues.push(`Memory ${memoryPercent}% exceeds ${MEM_WARNING_THRESHOLD}% threshold`);
+    }
 
-    const validated = cpuPercent < 85 && memoryPercent < 85;
+    const validated = cpuPercent < CPU_WARNING_THRESHOLD && memoryPercent < MEM_WARNING_THRESHOLD;
     const healthScore = Math.max(0, 100 - Math.max(0, cpuPercent - 50) - Math.max(0, memoryPercent - 50));
 
     return {
