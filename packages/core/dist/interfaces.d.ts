@@ -91,6 +91,8 @@ export interface IAgent {
     getStatus(): AgentStatus;
     healthCheck(): Promise<boolean>;
     getMetrics(): AgentMetrics;
+    enable(): void;
+    disable(): void;
     isEnabled(): boolean;
 }
 export interface AgentMetrics {
