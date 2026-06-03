@@ -90,6 +90,19 @@ export interface IAgent {
     canHandle(inputs: ServiceInputs): boolean;
     getStatus(): AgentStatus;
     healthCheck(): Promise<boolean>;
+    getMetrics(): AgentMetrics;
+    isEnabled(): boolean;
+}
+export interface AgentMetrics {
+    invocationCount: number;
+    successCount: number;
+    failureCount: number;
+    skipCount: number;
+    escalateCount: number;
+    totalDurationMs: number;
+    avgDurationMs: number;
+    lastRunAt: Date | null;
+    lastStatus: 'success' | 'failure' | 'skipped' | 'escalate' | null;
 }
 export interface IController {
     readonly id: string;
