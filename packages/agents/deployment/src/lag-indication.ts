@@ -49,7 +49,7 @@ export class LagIndicationAgent extends BaseAgent {
           : 'High risk detected — consider rollback before full traffic';
 
     const output: LagIndicationOutput = {
-      riskScore: Math.round(riskScore * 100) / 100,
+      riskScore,
       riskLevel,
       p99Latency,
       errorRate,

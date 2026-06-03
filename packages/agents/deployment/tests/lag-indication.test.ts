@@ -34,6 +34,26 @@ describe('LagIndicationAgent', () => {
     expect(result.escalate).toBeFalsy();
   });
 
+  it('returns the raw riskScore without rounding near the low-to-medium threshold', async () => {
+    const ctx = makeCtx({
+      serviceId: 'svc',
+      timestamp: 1000,
+      perfLog: {
+        p50Latency: 100,
+        p99Latency: 243.33333333333334,
+        errorRate: 0.01,
+        throughput: 800,
+      },
+    });
+    const result = await agent.execute(ctx);
+    expect(result.status).toBe('success');
+    const out = result.output as { riskScore: number; riskLevel: string };
+    const expectedRiskScore = 243.33333333333334 / 500 * 0.6 + 0.01 * 0.4;
+    expect(out.riskLevel).toBe('low');
+    expect(out.riskScore).toBeCloseTo(expectedRiskScore, 12);
+    expect(out.riskScore).toBeLessThan(0.3);
+  });
+
   it('returns success with medium risk recommendations when riskScore is 0.3–0.7', async () => {
     const ctx = makeCtx({
       serviceId: 'svc',
