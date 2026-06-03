@@ -10,7 +10,9 @@ class EchoAgent extends BaseAgent {
   readonly category = AgentCategory.MONITORING;
   readonly acceptedInputs = ['monitor' as const];
   readonly version = '0.1.0';
+  lastContext?: AgentContext & { trigger?: unknown };
   protected async run(ctx: AgentContext): Promise<AgentResult> {
+    this.lastContext = ctx as AgentContext & { trigger?: unknown };
     return { agentId: this.id, status: 'success', output: { echo: ctx.inputs.serviceId }, durationMs: 1 };
   }
 }
@@ -40,11 +42,13 @@ async function request(
 
 describe('AgentServer', () => {
   let server: AgentServer;
+  let agent: EchoAgent;
   const PORT = 14321;
 
   beforeEach(async () => {
-    server = new AgentServer(new EchoAgent(), { port: PORT });
-    await server.start();
+    agent = new EchoAgent();
+    server = new AgentServer(agent);
+    await server.start(PORT);
   });
 
   afterEach(async () => {
@@ -67,8 +71,9 @@ describe('AgentServer', () => {
   });
 
   it('POST /execute runs the agent and returns AgentResult', async () => {
+    const trigger = { type: 'manual', serviceId: 'svc-from-trigger', timestamp: Date.now() };
     const res = await request(PORT, 'POST', '/execute', {
-      trigger: { type: 'manual' },
+      trigger,
       inputs: {
         serviceId: 'test-svc',
         timestamp: Date.now(),
@@ -79,13 +84,15 @@ describe('AgentServer', () => {
     const body = res.body as { agentId: string; status: string };
     expect(body.agentId).toBe('echo');
     expect(body.status).toBe('success');
+    expect(agent.lastContext?.trigger).toEqual(trigger);
   });
 
   it('GET /metrics returns invocation metrics', async () => {
     await request(PORT, 'POST', '/execute', {
-      trigger: { type: 'manual' },
       inputs: { serviceId: 'svc', timestamp: Date.now(), monitors: { cpuPercent: 30, memoryPercent: 40, diskIoMbps: 1, networkMbps: 5 } },
     });
+    expect(agent.lastContext?.trigger).toMatchObject({ type: 'manual', serviceId: 'unknown' });
+    expect(typeof (agent.lastContext?.trigger as { timestamp?: unknown } | undefined)?.timestamp).toBe('number');
     const res = await request(PORT, 'GET', '/metrics');
     expect(res.status).toBe(200);
     const m = res.body as { invocationCount: number };
@@ -109,5 +116,11 @@ describe('AgentServer', () => {
   it('returns 404 for unknown routes', async () => {
     const res = await request(PORT, 'GET', '/unknown');
     expect(res.status).toBe(404);
+  });
+
+  it('start rejects when the port is already in use', async () => {
+    const otherServer = new AgentServer(new EchoAgent());
+    await expect(otherServer.start(PORT)).rejects.toThrow();
+    await otherServer.stop().catch(() => undefined);
   });
 });

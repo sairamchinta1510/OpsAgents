@@ -1,33 +1,36 @@
 import * as http from 'node:http';
-import type { IAgent, ServiceInputs, Trigger } from '@opsagents/core';
+import type { AgentContext, IAgent, ServiceInputs, Trigger } from '@opsagents/core';
 
 type ControllableAgent = IAgent & {
   enable(): void;
   disable(): void;
 };
 
-export interface AgentServerOptions {
-  port: number;
-  host?: string;
-}
+type HttpTrigger = Trigger | { type: 'manual'; serviceId: string; timestamp: number };
+type HttpAgentContext = AgentContext & { trigger: HttpTrigger };
 
 export class AgentServer {
   private readonly server: http.Server;
   private readonly agent: ControllableAgent;
-  private readonly port: number;
-  private readonly host: string;
+  private readonly host = '0.0.0.0';
 
-  constructor(agent: IAgent, options: AgentServerOptions) {
+  constructor(agent: IAgent) {
     this.agent = agent as ControllableAgent;
-    this.port = options.port;
-    this.host = options.host ?? '0.0.0.0';
     this.server = http.createServer((req, res) => this.handleRequest(req, res));
     this.server.keepAliveTimeout = 0;
   }
 
-  start(): Promise<void> {
-    return new Promise((resolve) => {
-      this.server.listen(this.port, this.host, () => resolve());
+  start(port: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const onError = (err: Error) => {
+        this.server.off('error', onError);
+        reject(err);
+      };
+      this.server.once('error', onError);
+      this.server.listen(port, this.host, () => {
+        this.server.off('error', onError);
+        resolve();
+      });
     });
   }
 
@@ -78,13 +81,16 @@ export class AgentServer {
       }
 
       if (method === 'POST' && url === '/execute') {
-        const body = await this.readBody<{ trigger: Trigger; inputs: ServiceInputs }>(req);
-        const ctx = {
+        const body = await this.readBody<{ trigger?: HttpTrigger; inputs?: ServiceInputs }>(req);
+        const inputs = body.inputs ?? { serviceId: 'unknown', timestamp: Date.now() };
+        const trigger = body.trigger ?? { type: 'manual', serviceId: 'unknown', timestamp: Date.now() };
+        const ctx: HttpAgentContext = {
           sessionId: `http-${Date.now()}`,
-          serviceId: body.inputs.serviceId,
+          serviceId: 'serviceId' in inputs && typeof inputs.serviceId === 'string' ? inputs.serviceId : 'unknown',
           triggeredBy: 'http',
-          inputs: body.inputs,
+          inputs,
           sharedState: {},
+          trigger,
         };
         const result = await this.agent.execute(ctx);
         return this.json(res, 200, result);
