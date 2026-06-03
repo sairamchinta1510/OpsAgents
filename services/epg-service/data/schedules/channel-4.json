@@ -1,0 +1,7 @@
+{
+  "channel": { "id": "channel-4", "name": "Channel 4", "region": "UK" },
+  "programmes": [
+    { "channel_id": "channel-4", "title": "Channel 4 News", "start_time": "2024-01-15T19:00:00Z", "end_time": "2024-01-15T19:55:00Z", "category": "News" },
+    { "channel_id": "channel-4", "title": "Hollyoaks", "start_time": "2024-01-15T18:30:00Z", "end_time": "2024-01-15T19:00:00Z", "category": "Drama" }
+  ]
+}
