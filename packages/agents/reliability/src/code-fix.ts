@@ -15,6 +15,8 @@ export interface CodeFixResult {
 const defaultShell: ShellRunner = (cmd) =>
   execSync(cmd, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
 
+const CODE_REPO_RE = /^[\w.\-]+\/[\w.\-]+$/;
+
 export class CodeFixAgent extends BaseAgent {
   readonly id = 'code-fix';
   readonly name = 'Code Fix Agent';
@@ -31,15 +33,16 @@ export class CodeFixAgent extends BaseAgent {
   }
 
   protected async run(context: AgentContext): Promise<AgentResult> {
+    const start = Date.now();
     const priorResults = (context.sharedState['priorResults'] as AgentResult[] | undefined) ?? [];
     const rcaResult = priorResults.find((r) => r.agentId === 'root-cause-analysis');
 
-    if (!rcaResult || rcaResult.status === 'skipped') {
+    if (!rcaResult || rcaResult.status !== 'success') {
       return {
         agentId: this.id,
         status: 'skipped',
         output: { reason: 'No RCA result available — skipping code fix' },
-        durationMs: 0,
+        durationMs: Date.now() - start,
       };
     }
 
@@ -51,21 +54,36 @@ export class CodeFixAgent extends BaseAgent {
         escalate: true,
         output: { reason: 'No codeRepo specified in ServiceInputs — cannot create PR' },
         recommendations: ['Set codeRepo in ServiceInputs (e.g. "owner/repo")'],
-        durationMs: 0,
+        durationMs: Date.now() - start,
+      };
+    }
+
+    if (!CODE_REPO_RE.test(codeRepo)) {
+      return {
+        agentId: this.id,
+        status: 'escalate',
+        escalate: true,
+        output: { reason: 'Invalid codeRepo format' },
+        recommendations: ['Set codeRepo in ServiceInputs (e.g. "owner/repo")'],
+        durationMs: Date.now() - start,
       };
     }
 
     const rca = rcaResult.output as RootCauseAnalysisOutput;
-    const topFix = rca.topHypothesis?.suggestedFix ?? 'Apply defensive null-check';
+    const rawTopFix = rca.topHypothesis?.suggestedFix ?? 'Apply defensive null-check';
+    const topFix = rawTopFix.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
     const branch = `fix/auto-patch-${Date.now()}`;
-    const filesChanged = ['src/epg-pipeline.ts'];
 
+    let branchCreated = false;
     try {
       this.shellRunner(`git checkout -b ${branch}`);
+      branchCreated = true;
       // Patch: overwrite buggy file with fixed content (stub — writes a sentinel comment)
       this.shellRunner(
         `git commit --allow-empty -m "fix(epg-service): auto-patch from CodeFixAgent\n\nFix: ${topFix}"`,
       );
+      const changedFilesOutput = this.shellRunner('git diff --name-only HEAD~1 HEAD');
+      const filesChanged = changedFilesOutput.split('\n').filter(Boolean);
       this.shellRunner(`git push origin ${branch}`);
       const prBody = [
         `## Auto-generated fix by CodeFixAgent`,
@@ -92,16 +110,19 @@ export class CodeFixAgent extends BaseAgent {
         status: 'success',
         output,
         recommendations: [`Review and merge PR: ${prUrl}`],
-        durationMs: 0,
+        durationMs: Date.now() - start,
       };
     } catch (err) {
+      if (branchCreated) {
+        try { this.shellRunner(`git checkout -`); this.shellRunner(`git branch -D ${branch}`); } catch { /* ignore */ }
+      }
       return {
         agentId: this.id,
         status: 'escalate',
         escalate: true,
         output: { error: String(err), branch, reason: 'Shell command failed during code fix' },
         recommendations: ['Check gh CLI authentication', 'Verify git remote is configured'],
-        durationMs: 0,
+        durationMs: Date.now() - start,
       };
     }
   }

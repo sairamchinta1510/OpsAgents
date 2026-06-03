@@ -38,7 +38,10 @@ describe('CodeFixAgent', () => {
   let mockShell: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    mockShell = vi.fn().mockReturnValue('https://github.com/acme/epg-service/pull/42');
+    mockShell = vi.fn().mockImplementation((cmd: string) => {
+      if (cmd.includes('git diff --name-only')) return 'src/epg-pipeline.ts\n';
+      return 'https://github.com/acme/epg-service/pull/42';
+    });
   });
 
   it('returns success and pr_url when shell commands succeed', async () => {
@@ -62,9 +65,7 @@ describe('CodeFixAgent', () => {
   it('files_changed is populated', async () => {
     const agent = new CodeFixAgent(mockShell);
     const result = await agent.execute(makeCtx());
-    expect((result.output as Record<string, unknown>).files_changed).toEqual(
-      expect.arrayContaining([expect.any(String)]),
-    );
+    expect((result.output as Record<string, unknown>).files_changed).toEqual(['src/epg-pipeline.ts']);
   });
 
   it('escalates when no codeRepo in inputs', async () => {
@@ -81,6 +82,29 @@ describe('CodeFixAgent', () => {
     const ctx = makeCtx({ sharedState: { priorResults: [] } });
     const result = await agent.execute(ctx);
     expect(result.status).toBe('skipped');
+  });
+
+  it("skips when RCA result is 'failed'", async () => {
+    const agent = new CodeFixAgent(mockShell);
+    const ctx = makeCtx({
+      sharedState: {
+        priorResults: [
+          { agentId: 'root-cause-analysis', status: 'failed', output: {}, durationMs: 0 },
+        ],
+      },
+    });
+    const result = await agent.execute(ctx);
+    expect(result.status).toBe('skipped');
+  });
+
+  it('escalates when codeRepo format is invalid', async () => {
+    const agent = new CodeFixAgent(mockShell);
+    const ctx = makeCtx();
+    ctx.inputs.codeRepo = 'not/a/valid; rm -rf';
+    const result = await agent.execute(ctx);
+    expect(result.status).toBe('escalate');
+    expect(result.escalate).toBe(true);
+    expect((result.output as Record<string, unknown>).reason).toBe('Invalid codeRepo format');
   });
 
   it('escalates when shell throws (gh CLI unavailable)', async () => {
