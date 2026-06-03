@@ -16,7 +16,12 @@ import {
   EscalationAgent,
   ReportingAgent,
   ExecutiveCommunicationAgent,
+  type ShellRunner,
 } from '@opsagents/agents-reliability';
+
+export interface IncidentControllerOptions {
+  codeFixShellRunner?: ShellRunner;
+}
 
 export interface IncidentControllerResult {
   status: 'success' | 'failure' | 'escalated';
@@ -32,13 +37,14 @@ export class IncidentController extends BaseController {
   constructor(
     private readonly registry: AgentRegistry,
     private readonly eventBus: EventBus,
+    options?: IncidentControllerOptions,
   ) {
     super();
 
     const agents = [
       new IssueIdentificationAgent(),
       new RootCauseAnalysisAgent(),
-      new CodeFixAgent(),
+      new CodeFixAgent(options?.codeFixShellRunner),
       new SpareTierRedundancyAgent(),
       new EscalationAgent(),
       new ReportingAgent(),
@@ -99,6 +105,7 @@ export class IncidentController extends BaseController {
         perfLog: inputs.perfLog,
         code: inputs.code,
         machineParams: inputs.machineParams,
+        codeRepo: inputs.codeRepo,
       },
       sharedState: { trigger },
     };
