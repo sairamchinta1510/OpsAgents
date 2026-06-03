@@ -17,7 +17,8 @@ describe('CiCdGovernanceAgent', () => {
   it('has correct id, category, and acceptedInputs', () => {
     expect(agent.id).toBe('ci-cd-governance');
     expect(agent.category).toBe(AgentCategory.DEPLOYMENT);
-    expect(agent.acceptedInputs).toEqual(['code']);
+    expect(agent.acceptedInputs).toContain('code');
+    expect(agent.acceptedInputs).toContain('perf-log');
   });
 
   it('returns success when coverage >= 70 and errorRate <= 0.05', async () => {
@@ -86,15 +87,16 @@ describe('CiCdGovernanceAgent', () => {
     expect(result.status).toBe('skipped');
   });
 
-  it('skips when code.coverage is absent (undefined)', async () => {
+  it('treats missing code.coverage as 0 and escalates', async () => {
     const ctx = makeCtx({
       serviceId: 'svc',
       timestamp: 1000,
       code: { diff: 'x', commitSha: 'abc' },
     });
     const result = await agent.execute(ctx);
-    expect(result.status).toBe('skipped');
-    expect(result.escalate).toBeFalsy();
+    expect(result.status).toBe('failure');
+    expect(result.escalate).toBe(true);
+    expect((result.output as { coverage: number }).coverage).toBe(0);
   });
 
   it('escalates at coverage = 49 (below critical threshold)', async () => {

@@ -17,7 +17,7 @@ export class CiCdGovernanceAgent extends BaseAgent {
   readonly id = 'ci-cd-governance';
   readonly name = 'CI/CD Governance Agent';
   readonly category = AgentCategory.DEPLOYMENT;
-  readonly acceptedInputs = ['code' as const];
+  readonly acceptedInputs = ['code' as const, 'perf-log' as const];
   readonly version = '0.1.0';
 
   protected async run(context: AgentContext): Promise<AgentResult> {
@@ -32,16 +32,7 @@ export class CiCdGovernanceAgent extends BaseAgent {
       };
     }
 
-    const coverage = code.coverage;
-    if (coverage === undefined) {
-      return {
-        agentId: this.id,
-        status: 'skipped',
-        output: { reason: 'No coverage data in code input' },
-        durationMs: 0,
-      };
-    }
-
+    const coverage = code.coverage ?? 0;
     const errorRate = perfLog?.errorRate ?? 0;
     const auditLog: string[] = [];
 
