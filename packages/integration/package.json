@@ -9,8 +9,11 @@
     "@opsagents/core": "*",
     "@opsagents/agents-deployment": "*",
     "@opsagents/agents-predictive": "*",
+    "@opsagents/agents-monitoring": "*",
     "@opsagents/controllers-deployment": "*",
-    "@opsagents/runtime": "*"
+    "@opsagents/controllers-monitoring": "*",
+    "@opsagents/runtime": "*",
+    "@opsagents/sdk": "*"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

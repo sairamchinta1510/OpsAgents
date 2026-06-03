@@ -63,4 +63,43 @@ describe('ServiceAdapter', () => {
       'serviceId mismatch',
     );
   });
+
+  it('startPolling calls controllers on each interval tick', async () => {
+    vi.useFakeTimers();
+
+    const ctrl = new PassController();
+    ctrl.registerAgent(new EchoAgent());
+    const runSpy = vi.spyOn(ctrl, 'orchestrate');
+
+    const adapter = new ServiceAdapter({ serviceId: 'svc-1', controllers: [ctrl] });
+    const inputs: ServiceInputs = { serviceId: 'svc-1', timestamp: Date.now(), monitors: { cpuPercent: 10, memoryPercent: 20, diskIoMbps: 1, networkMbps: 5 } };
+
+    adapter.startPolling(500, () => inputs);
+    expect(adapter.isPolling()).toBe(true);
+
+    await vi.advanceTimersByTimeAsync(1600);
+
+    // Should have fired 3 times (at 500ms, 1000ms, 1500ms)
+    expect(runSpy).toHaveBeenCalledTimes(3);
+
+    adapter.stopPolling();
+    expect(adapter.isPolling()).toBe(false);
+
+    vi.useRealTimers();
+  });
+
+  it('startPolling throws if already polling', () => {
+    vi.useFakeTimers();
+    const adapter = new ServiceAdapter({ serviceId: 'svc-1', controllers: [] });
+    adapter.startPolling(1000, () => ({ serviceId: 'svc-1', timestamp: Date.now() }));
+    expect(() => adapter.startPolling(1000, () => ({ serviceId: 'svc-1', timestamp: Date.now() }))).toThrow('Polling is already running');
+    adapter.stopPolling();
+    vi.useRealTimers();
+  });
+
+  it('stopPolling is a no-op when not polling', () => {
+    const adapter = new ServiceAdapter({ serviceId: 'svc-1', controllers: [] });
+    expect(() => adapter.stopPolling()).not.toThrow();
+    expect(adapter.isPolling()).toBe(false);
+  });
 });
