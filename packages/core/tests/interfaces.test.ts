@@ -26,7 +26,14 @@ describe('ServiceInputs shape', () => {
       code: { diff: 'diff --git ...', commitSha: 'abc123', files: ['src/app.ts'], coverage: 85 },
       perfLog: { p50Latency: 50, p99Latency: 200, errorRate: 0.01, throughput: 1000 },
       monitors: { cpuPercent: 40, memoryPercent: 60, diskIoMbps: 10, networkMbps: 100 },
-      machineParams: { instanceType: 't3.medium', region: 'us-east-1', availabilityZone: 'us-east-1a', nodeCount: 3 },
+      machineParams: {
+        cpuPercent: 40,
+        memoryPercent: 60,
+        instanceType: 't3.medium',
+        region: 'us-east-1',
+        availabilityZone: 'us-east-1a',
+        nodeCount: 3,
+      },
       incident: { alertId: 'alert-1', severity: 'high', message: 'p99 spike', source: 'cloudwatch', timestamp: 1000 },
     };
     expect(input.perfLog?.p99Latency).toBe(200);

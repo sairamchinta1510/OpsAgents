@@ -1,96 +1,79 @@
-import { describe, it, expect } from 'vitest';
-import { DeploymentValidationAgent } from '../src/deployment-validation.js';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { AgentCategory } from '@opsagents/core';
 import type { AgentContext, ServiceInputs } from '@opsagents/core';
+import { DeploymentValidationAgent } from '../src/deployment-validation.js';
 
-const makeCtx = (inputs: ServiceInputs): AgentContext => ({
-  sessionId: 'sess-1',
-  serviceId: inputs.serviceId,
-  triggeredBy: 'test',
-  inputs,
-  sharedState: {},
-});
+function makeCtx(inputs: Partial<ServiceInputs>): AgentContext {
+  return {
+    sessionId: 'sess-1',
+    serviceId: 'svc',
+    triggeredBy: 'test',
+    sharedState: {},
+    inputs: { serviceId: 'svc', timestamp: 1000, ...inputs },
+  };
+}
 
 describe('DeploymentValidationAgent', () => {
-  const agent = new DeploymentValidationAgent();
+  let agent: DeploymentValidationAgent;
+  beforeEach(() => { agent = new DeploymentValidationAgent(); });
 
-  it('has correct id and acceptedInputs', () => {
+  it('has correct id, category, and acceptedInputs', () => {
     expect(agent.id).toBe('deployment-validation');
     expect(agent.category).toBe(AgentCategory.DEPLOYMENT);
-    expect(agent.acceptedInputs).toContain('monitor');
+    expect(agent.acceptedInputs).toContain('machine-params');
   });
 
-  it('validates successfully when cpu < 85 and memory < 85', async () => {
-    const ctx = makeCtx({
-      serviceId: 'svc',
-      timestamp: 1000,
-      monitors: { cpuPercent: 50, memoryPercent: 60, diskIoMbps: 10, networkMbps: 20 },
-    });
-    const result = await agent.execute(ctx);
+  it('skips when machineParams is absent', async () => {
+    const result = await agent.execute(makeCtx({}));
+    expect(result.status).toBe('skipped');
+    expect(result.escalate).toBeFalsy();
+  });
+
+  it('validates when cpu=50 and memory=60 (normal)', async () => {
+    const result = await agent.execute(makeCtx({ machineParams: { cpuPercent: 50, memoryPercent: 60 } }));
     expect(result.status).toBe('success');
     expect((result.output as { validated: boolean }).validated).toBe(true);
-    expect(result.escalate).toBeFalsy();
   });
 
-  it('returns failure when cpu >= 85', async () => {
-    const ctx = makeCtx({
-      serviceId: 'svc',
-      timestamp: 1000,
-      monitors: { cpuPercent: 88, memoryPercent: 50, diskIoMbps: 10, networkMbps: 20 },
-    });
-    const result = await agent.execute(ctx);
+  it('fails when cpu=90 (above warning threshold)', async () => {
+    const result = await agent.execute(makeCtx({ machineParams: { cpuPercent: 90, memoryPercent: 60 } }));
     expect(result.status).toBe('failure');
     expect((result.output as { validated: boolean }).validated).toBe(false);
+    expect(typeof (result.output as { reason: string }).reason).toBe('string');
     expect(result.escalate).toBeFalsy();
   });
 
-  it('escalates when cpu > 95', async () => {
-    const ctx = makeCtx({
-      serviceId: 'svc',
-      timestamp: 1000,
-      monitors: { cpuPercent: 97, memoryPercent: 50, diskIoMbps: 10, networkMbps: 20 },
-    });
-    const result = await agent.execute(ctx);
+  it('escalates when cpu=97 (above critical threshold)', async () => {
+    const result = await agent.execute(makeCtx({ machineParams: { cpuPercent: 97, memoryPercent: 60 } }));
+    expect(result.status).toBe('escalate');
+    expect(typeof (result.output as { reason: string }).reason).toBe('string');
     expect(result.escalate).toBe(true);
   });
 
-  it('escalates when memory > 95', async () => {
-    const ctx = makeCtx({
-      serviceId: 'svc',
-      timestamp: 1000,
-      monitors: { cpuPercent: 50, memoryPercent: 96, diskIoMbps: 10, networkMbps: 20 },
-    });
-    const result = await agent.execute(ctx);
+  it('validates at cpu=84 (just below warning boundary)', async () => {
+    const result = await agent.execute(makeCtx({ machineParams: { cpuPercent: 84, memoryPercent: 60 } }));
+    expect((result.output as { validated: boolean }).validated).toBe(true);
+  });
+
+  it('fails at cpu=85 (at warning boundary)', async () => {
+    const result = await agent.execute(makeCtx({ machineParams: { cpuPercent: 85, memoryPercent: 60 } }));
+    expect((result.output as { validated: boolean }).validated).toBe(false);
+  });
+
+  it('escalates at memory=96 (above critical threshold)', async () => {
+    const result = await agent.execute(makeCtx({ machineParams: { cpuPercent: 50, memoryPercent: 96 } }));
+    expect(result.status).toBe('escalate');
     expect(result.escalate).toBe(true);
   });
 
-  it('skips when monitors input is absent', async () => {
-    const ctx = makeCtx({ serviceId: 'svc', timestamp: 1000 });
-    const result = await agent.execute(ctx);
-    expect(result.status).toBe('skipped');
-  });
-
-  it('returns failure at exactly cpu=85 (boundary)', async () => {
-    const ctx = makeCtx({
-      serviceId: 'svc',
-      timestamp: 1000,
-      monitors: { cpuPercent: 85, memoryPercent: 50, diskIoMbps: 10, networkMbps: 20 },
-    });
-    const result = await agent.execute(ctx);
-    expect(result.status).toBe('failure');
+  it('does not escalate at memory=95 (at critical boundary)', async () => {
+    const result = await agent.execute(makeCtx({ machineParams: { cpuPercent: 50, memoryPercent: 95 } }));
+    expect(result.escalate).toBeFalsy();
     expect((result.output as { validated: boolean }).validated).toBe(false);
-    expect(result.escalate).toBeFalsy();
   });
 
-  it('does not escalate at exactly cpu=95 (boundary — must be > 95)', async () => {
-    const ctx = makeCtx({
-      serviceId: 'svc',
-      timestamp: 1000,
-      monitors: { cpuPercent: 95, memoryPercent: 50, diskIoMbps: 10, networkMbps: 20 },
-    });
-    const result = await agent.execute(ctx);
-    // 95 is NOT > 95, so should NOT escalate — should be failure only
-    expect(result.escalate).toBeFalsy();
-    expect(result.status).toBe('failure');
+  it('output always contains reason string', async () => {
+    const result = await agent.execute(makeCtx({ machineParams: { cpuPercent: 50, memoryPercent: 60 } }));
+    expect(typeof (result.output as { reason: string }).reason).toBe('string');
   });
 });

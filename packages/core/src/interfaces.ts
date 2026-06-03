@@ -26,10 +26,12 @@ export interface MonitorInput {
 }
 
 export interface MachineParamsInput {
-  instanceType: string;
-  region: string;
-  availabilityZone: string;
-  nodeCount: number;
+  cpuPercent: number;
+  memoryPercent: number;
+  instanceType?: string;
+  region?: string;
+  availabilityZone?: string;
+  nodeCount?: number;
   tags?: Record<string, string>;
 }
 
