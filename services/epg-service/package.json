@@ -1,0 +1,12 @@
+{
+  "name": "@opsagents/epg-service",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "demo": "npx tsx demo/run-demo.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0"
+  }
+}

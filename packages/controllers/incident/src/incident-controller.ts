@@ -11,10 +11,17 @@ import {
 import {
   IssueIdentificationAgent,
   RootCauseAnalysisAgent,
+  CodeFixAgent,
   SpareTierRedundancyAgent,
   EscalationAgent,
   ReportingAgent,
+  ExecutiveCommunicationAgent,
+  type ShellRunner,
 } from '@opsagents/agents-reliability';
+
+export interface IncidentControllerOptions {
+  codeFixShellRunner?: ShellRunner;
+}
 
 export interface IncidentControllerResult {
   status: 'success' | 'failure' | 'escalated';
@@ -30,15 +37,18 @@ export class IncidentController extends BaseController {
   constructor(
     private readonly registry: AgentRegistry,
     private readonly eventBus: EventBus,
+    options?: IncidentControllerOptions,
   ) {
     super();
 
     const agents = [
       new IssueIdentificationAgent(),
       new RootCauseAnalysisAgent(),
+      new CodeFixAgent(options?.codeFixShellRunner),
       new SpareTierRedundancyAgent(),
       new EscalationAgent(),
       new ReportingAgent(),
+      new ExecutiveCommunicationAgent(),
     ];
 
     for (const agent of agents) {
@@ -95,33 +105,32 @@ export class IncidentController extends BaseController {
         perfLog: inputs.perfLog,
         code: inputs.code,
         machineParams: inputs.machineParams,
+        codeRepo: inputs.codeRepo,
       },
       sharedState: { trigger },
     };
 
     const results: AgentResult[] = [];
     const agents = this.getRegisteredAgents();
+    const ALWAYS_RUN_IDS = new Set(['reporting', 'executive-communication']);
+    let escalated = false;
 
     for (let i = 0; i < agents.length; i++) {
       const agent = agents[i];
-      const isReportingAgent = i === agents.length - 1;
+      const isAlwaysRun = ALWAYS_RUN_IDS.has(agent.id);
+
+      if (escalated && !isAlwaysRun) continue;
 
       this.eventBus.publish('incident-controller:agent-started', { controllerId: this.id, agentId: agent.id, trigger });
       const result = await agent.execute(ctx);
       results.push(result);
-      // Keep prior results available for ReportingAgent
+      // Keep prior results available for downstream agents
       ctx.sharedState['priorResults'] = [...results];
       this.eventBus.publish('incident-controller:agent-completed', { controllerId: this.id, agentId: agent.id, result });
 
-      // Halt pipeline on escalation — except ReportingAgent always runs last
-      if (result.escalate === true && !isReportingAgent) {
-        // Still run ReportingAgent as final step
-        const reportAgent = agents[agents.length - 1];
-        this.eventBus.publish('incident-controller:agent-started', { controllerId: this.id, agentId: reportAgent.id, trigger });
-        const reportResult = await reportAgent.execute(ctx);
-        results.push(reportResult);
-        this.eventBus.publish('incident-controller:agent-completed', { controllerId: this.id, agentId: reportAgent.id, result: reportResult });
-        break;
+      if (result.escalate === true && !escalated) {
+        escalated = true;
+        // continue loop to pick up always-run agents
       }
     }
 
