@@ -59,7 +59,7 @@ export class TrafficDialUpAgent extends BaseAgent {
 
     return {
       agentId: this.id,
-      status: shouldDialUp ? 'success' : escalate ? 'escalate' : 'failure',
+      status: shouldDialUp ? 'success' : 'failure',
       output,
       recommendations: [recommendation],
       escalate,

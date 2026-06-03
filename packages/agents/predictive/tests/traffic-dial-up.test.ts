@@ -38,6 +38,7 @@ describe('TrafficDialUpAgent', () => {
       machineParams: { cpuPercent: 80, memoryPercent: 75 }
     }));
     expect(result.escalate).toBe(true);
+    expect(result.status).toBe('failure');
   });
 
   it('does not dial up when throughput below threshold', async () => {
