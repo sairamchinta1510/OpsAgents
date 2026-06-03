@@ -12,6 +12,8 @@
     "@opsagents/agents-monitoring": "*",
     "@opsagents/controllers-deployment": "*",
     "@opsagents/controllers-monitoring": "*",
+    "@opsagents/agents-reliability": "*",
+    "@opsagents/controllers-incident": "*",
     "@opsagents/runtime": "*",
     "@opsagents/sdk": "*"
   },
