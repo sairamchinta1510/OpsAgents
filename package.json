@@ -4,6 +4,7 @@
   "workspaces": [
     "packages/*",
     "packages/agents/*",
+    "packages/controllers/*",
     "services/*"
   ],
   "scripts": {
