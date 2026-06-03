@@ -24,6 +24,6 @@ export class AgentRegistry {
   }
 
   listByCategory(category: AgentCategory): IAgent[] {
-    return this.list().filter((a) => a.category === category);
+    return Array.from(this.agents.values()).filter((a) => a.category === category);
   }
 }
