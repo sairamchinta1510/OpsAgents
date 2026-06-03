@@ -1,6 +1,10 @@
 import { BaseAgent, AgentCategory } from '@opsagents/core';
 import type { AgentContext, AgentResult } from '@opsagents/core';
 
+const COVERAGE_APPROVAL_THRESHOLD = 70;
+const COVERAGE_CRITICAL_THRESHOLD = 50;
+const ERROR_RATE_THRESHOLD = 0.05;
+
 export interface CiCdGovernanceOutput {
   approved: boolean;
   coverage: number;
@@ -13,7 +17,7 @@ export class CiCdGovernanceAgent extends BaseAgent {
   readonly id = 'ci-cd-governance';
   readonly name = 'CI/CD Governance Agent';
   readonly category = AgentCategory.DEPLOYMENT;
-  readonly acceptedInputs = ['code' as const, 'perf-log' as const];
+  readonly acceptedInputs = ['code' as const];
   readonly version = '0.1.0';
 
   protected async run(context: AgentContext): Promise<AgentResult> {
@@ -28,15 +32,24 @@ export class CiCdGovernanceAgent extends BaseAgent {
       };
     }
 
-    const coverage = code.coverage ?? 0;
+    const coverage = code.coverage;
+    if (coverage === undefined) {
+      return {
+        agentId: this.id,
+        status: 'skipped',
+        output: { reason: 'No coverage data in code input' },
+        durationMs: 0,
+      };
+    }
+
     const errorRate = perfLog?.errorRate ?? 0;
     const auditLog: string[] = [];
 
-    auditLog.push(`Coverage: ${coverage}% (threshold: 70%)`);
-    auditLog.push(`Error rate: ${(errorRate * 100).toFixed(2)}% (threshold: 5%)`);
+    auditLog.push(`Coverage: ${coverage}% (threshold: ${COVERAGE_APPROVAL_THRESHOLD}%)`);
+    auditLog.push(`Error rate: ${(errorRate * 100).toFixed(2)}% (threshold: ${ERROR_RATE_THRESHOLD * 100}%)`);
 
-    if (coverage < 50) {
-      auditLog.push('CRITICAL: Coverage below 50% — escalating');
+    if (coverage < COVERAGE_CRITICAL_THRESHOLD) {
+      auditLog.push(`CRITICAL: Coverage below ${COVERAGE_CRITICAL_THRESHOLD}% — escalating`);
       return {
         agentId: this.id,
         status: 'failure',
@@ -44,21 +57,25 @@ export class CiCdGovernanceAgent extends BaseAgent {
           approved: false,
           coverage,
           errorRate,
-          reason: 'Coverage critically low (<50%)',
+          reason: `Coverage critically low (<${COVERAGE_CRITICAL_THRESHOLD}%)`,
           auditLog,
         } satisfies CiCdGovernanceOutput,
-        recommendations: ['Add unit tests before deploying', 'Minimum 70% coverage required'],
+        recommendations: ['Add unit tests before deploying', `Minimum ${COVERAGE_APPROVAL_THRESHOLD}% coverage required`],
         escalate: true,
         durationMs: 0,
       };
     }
 
-    const approved = coverage >= 70 && errorRate <= 0.05;
+    const approved = coverage >= COVERAGE_APPROVAL_THRESHOLD && errorRate <= ERROR_RATE_THRESHOLD;
 
     if (!approved) {
       const reasons: string[] = [];
-      if (coverage < 70) reasons.push(`Coverage ${coverage}% below 70% threshold`);
-      if (errorRate > 0.05) reasons.push(`Error rate ${(errorRate * 100).toFixed(2)}% above 5% threshold`);
+      if (coverage < COVERAGE_APPROVAL_THRESHOLD) {
+        reasons.push(`Coverage ${coverage}% below ${COVERAGE_APPROVAL_THRESHOLD}% threshold`);
+      }
+      if (errorRate > ERROR_RATE_THRESHOLD) {
+        reasons.push(`Error rate ${(errorRate * 100).toFixed(2)}% above ${ERROR_RATE_THRESHOLD * 100}% threshold`);
+      }
       auditLog.push(`REJECTED: ${reasons.join('; ')}`);
     } else {
       auditLog.push('APPROVED: All governance checks passed');

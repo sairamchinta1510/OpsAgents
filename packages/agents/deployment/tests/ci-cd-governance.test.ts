@@ -17,8 +17,7 @@ describe('CiCdGovernanceAgent', () => {
   it('has correct id, category, and acceptedInputs', () => {
     expect(agent.id).toBe('ci-cd-governance');
     expect(agent.category).toBe(AgentCategory.DEPLOYMENT);
-    expect(agent.acceptedInputs).toContain('code');
-    expect(agent.acceptedInputs).toContain('perf-log');
+    expect(agent.acceptedInputs).toEqual(['code']);
   });
 
   it('returns success when coverage >= 70 and errorRate <= 0.05', async () => {
@@ -85,5 +84,49 @@ describe('CiCdGovernanceAgent', () => {
     const ctx = makeCtx({ serviceId: 'svc', timestamp: 1000 });
     const result = await agent.execute(ctx);
     expect(result.status).toBe('skipped');
+  });
+
+  it('skips when code.coverage is absent (undefined)', async () => {
+    const ctx = makeCtx({
+      serviceId: 'svc',
+      timestamp: 1000,
+      code: { diff: 'x', commitSha: 'abc' },
+    });
+    const result = await agent.execute(ctx);
+    expect(result.status).toBe('skipped');
+    expect(result.escalate).toBeFalsy();
+  });
+
+  it('escalates at coverage = 49 (below critical threshold)', async () => {
+    const ctx = makeCtx({
+      serviceId: 'svc',
+      timestamp: 1000,
+      code: { coverage: 49 },
+    });
+    const result = await agent.execute(ctx);
+    expect(result.escalate).toBe(true);
+  });
+
+  it('does not escalate at coverage = 50 (at critical threshold boundary)', async () => {
+    const ctx = makeCtx({
+      serviceId: 'svc',
+      timestamp: 1000,
+      code: { coverage: 50 },
+    });
+    const result = await agent.execute(ctx);
+    expect(result.escalate).toBeFalsy();
+    expect(result.status).toBe('failure');
+  });
+
+  it('approves at coverage = 70 (approval boundary)', async () => {
+    const ctx = makeCtx({
+      serviceId: 'svc',
+      timestamp: 1000,
+      code: { coverage: 70 },
+      perfLog: { p50Latency: 10, p99Latency: 50, errorRate: 0, throughput: 1000 },
+    });
+    const result = await agent.execute(ctx);
+    expect(result.status).toBe('success');
+    expect((result.output as { approved: boolean }).approved).toBe(true);
   });
 });
