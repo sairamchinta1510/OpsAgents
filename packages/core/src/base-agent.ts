@@ -100,7 +100,10 @@ export abstract class BaseAgent implements IAgent {
   }
 
   getMetrics(): AgentMetrics {
-    return { ...this._metrics };
+    return {
+      ...this._metrics,
+      lastRunAt: this._metrics.lastRunAt ? new Date(this._metrics.lastRunAt.getTime()) : null,
+    };
   }
 
   getStatus(): AgentStatus {

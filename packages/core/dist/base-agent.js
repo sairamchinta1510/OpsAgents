@@ -80,7 +80,10 @@ export class BaseAgent {
         return this._enabled;
     }
     getMetrics() {
-        return { ...this._metrics };
+        return {
+            ...this._metrics,
+            lastRunAt: this._metrics.lastRunAt ? new Date(this._metrics.lastRunAt.getTime()) : null,
+        };
     }
     getStatus() {
         return this._status;

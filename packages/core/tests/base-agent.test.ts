@@ -256,7 +256,7 @@ describe('BaseAgent metrics tracking', () => {
     expect(m.escalateCount).toBe(1);
   });
 
-  it('getMetrics() returns a copy (not mutable reference)', async () => {
+  it('getMetrics() returns a copy with cloned Date (not mutable reference)', async () => {
     const agent = new EchoAgent();
     const ctx = makeContext({
       inputs: {
@@ -268,7 +268,10 @@ describe('BaseAgent metrics tracking', () => {
     await agent.execute(ctx);
     const m1 = agent.getMetrics();
     m1.invocationCount = 999;
+    m1.lastRunAt!.setFullYear(2000);
     const m2 = agent.getMetrics();
     expect(m2.invocationCount).toBe(1);
+    expect(m1.lastRunAt).not.toBe(m2.lastRunAt);
+    expect(m2.lastRunAt!.getFullYear()).not.toBe(2000);
   });
 });
