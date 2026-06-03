@@ -1,6 +1,12 @@
 import * as http from 'node:http';
 import type { AgentContext, IAgent, ServiceInputs, Trigger } from '@opsagents/core';
 
+class ClientError extends Error {
+  constructor(public readonly statusCode: number, message: string) {
+    super(message);
+  }
+}
+
 type ControllableAgent = IAgent & {
   enable(): void;
   disable(): void;
@@ -71,7 +77,10 @@ export class AgentServer {
       }
 
       if (method === 'PUT' && url === '/control') {
-        const body = await this.readBody<{ enabled: boolean }>(req);
+        const body = await this.readBody<{ enabled?: boolean }>(req);
+        if (typeof body.enabled !== 'boolean') {
+          return this.json(res, 400, { error: '`enabled` must be a boolean' });
+        }
         if (body.enabled) {
           this.agent.enable();
         } else {
@@ -98,7 +107,9 @@ export class AgentServer {
 
       this.json(res, 404, { error: 'Not found', path: url });
     } catch (err) {
-      this.json(res, 500, { error: String(err) });
+      const status = err instanceof ClientError ? err.statusCode : 500;
+      const message = err instanceof Error ? err.message : 'Internal server error';
+      this.json(res, status, { error: message });
     }
   }
 
@@ -116,7 +127,7 @@ export class AgentServer {
         try {
           resolve(JSON.parse(raw) as T);
         } catch {
-          reject(new Error('Invalid JSON body'));
+          reject(new ClientError(400, 'Invalid JSON body'));
         }
       });
       req.on('error', reject);

@@ -23,11 +23,19 @@ async function request(
   path: string,
   body?: unknown,
 ): Promise<{ status: number; body: unknown }> {
+  return requestRaw(port, method, path, body ? JSON.stringify(body) : undefined);
+}
+
+async function requestRaw(
+  port: number,
+  method: string,
+  path: string,
+  rawBody?: string,
+): Promise<{ status: number; body: unknown }> {
   return new Promise((resolve, reject) => {
-    const data = body ? JSON.stringify(body) : undefined;
     const req = http.request(
       { hostname: '127.0.0.1', port, path, method,
-        headers: { 'Content-Type': 'application/json', ...(data ? { 'Content-Length': Buffer.byteLength(data) } : {}) } },
+        headers: { 'Content-Type': 'application/json', ...(rawBody ? { 'Content-Length': Buffer.byteLength(rawBody) } : {}) } },
       (res) => {
         let raw = '';
         res.on('data', (c) => (raw += c));
@@ -35,7 +43,7 @@ async function request(
       },
     );
     req.on('error', reject);
-    if (data) req.write(data);
+    if (rawBody) req.write(rawBody);
     req.end();
   });
 }
@@ -111,6 +119,21 @@ describe('AgentServer', () => {
     await request(PORT, 'PUT', '/control', { enabled: true });
     const health = await request(PORT, 'GET', '/health');
     expect((health.body as { status: string }).status).toBe('ok');
+  });
+
+  it('PUT /control with missing enabled returns 400', async () => {
+    const res = await request(PORT, 'PUT', '/control', {});
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ error: '`enabled` must be a boolean' });
+
+    const health = await request(PORT, 'GET', '/health');
+    expect((health.body as { status: string }).status).toBe('ok');
+  });
+
+  it('POST /execute with invalid JSON returns 400', async () => {
+    const res = await requestRaw(PORT, 'POST', '/execute', '{');
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ error: 'Invalid JSON body' });
   });
 
   it('returns 404 for unknown routes', async () => {
