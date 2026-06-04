@@ -25,11 +25,13 @@ export class ExecutiveCommunicationAgent extends BaseAgent {
     const start = Date.now();
     const outputDir = (context.sharedState['outputDir'] as string) ?? 'dist/exec-comms';
 
-    const allResults = (context.sharedState['priorResults'] as Record<string, AgentResult> | undefined) ?? {};
-    const rcaResult = allResults['root-cause-analysis'];
-    const codeFixResult = allResults['code-fix'];
+    const allResults = (context.sharedState['priorResults'] as AgentResult[] | undefined) ?? [];
+    const rcaResult = allResults.find(r => r.agentId === 'root-cause-analysis');
+    const codeFixResult = allResults.find(r => r.agentId === 'code-fix');
 
-    const rootCause = (rcaResult?.output as any)?.topHypothesis?.description ?? 'Under investigation';
+    const topHypothesis = (rcaResult?.output as any)?.topHypothesis;
+    const rootCause = topHypothesis?.hypothesis ?? 'Under investigation';
+    const topHypothesisConfidence = topHypothesis?.confidence ?? 'low';
     const prUrl = (codeFixResult?.output as any)?.pr_url ?? null;
     const affectedServices = context.inputs.serviceId ?? 'unknown';
 
@@ -49,15 +51,23 @@ export class ExecutiveCommunicationAgent extends BaseAgent {
       `**Auto-fix PR:** ${prUrl ?? 'N/A'}`,
       ``,
       `## Activities`,
-      Object.entries(allResults).map(([id, r]) => `- ${id}: ${r?.status ?? 'unknown'}`).join('\n'),
+      allResults.map(r => `- ${r.agentId}: ${r?.status ?? 'unknown'}`).join('\n'),
     ].join('\n');
+
+    const customerImpactMap: Record<string, string> = {
+      high: 'Critical - Immediate action required',
+      medium: 'Moderate - Customers affected',
+      low: 'Minimal - Limited customer impact',
+    };
+    const customerImpact = customerImpactMap[topHypothesisConfidence] ?? 'Unknown';
 
     const dashboardSummary = {
       service: affectedServices,
       rootCause,
       prUrl,
+      customerImpact,
       agentResults: Object.fromEntries(
-        Object.entries(allResults).map(([id, r]) => [id, r?.status ?? 'unknown']),
+        allResults.map(r => [r.agentId, r?.status ?? 'unknown']),
       ),
       timestamp: new Date().toISOString(),
     };
