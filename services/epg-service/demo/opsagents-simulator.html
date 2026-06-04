@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>OpsAgents — Real Simulation</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--accent:#58a6ff;--green:#3fb950;--red:#f85149;--yellow:#e3b341;--purple:#bc8cff;--orange:#ffa657;--text:#e6edf3;--sub:#8b949e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;height:100vh;overflow:hidden}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+header h1{font-size:1rem;font-weight:600}
+.badge{border:1px solid var(--border);border-radius:10px;padding:2px 9px;font-size:.72rem;color:var(--sub)}
+.badge.live{border-color:var(--green);color:var(--green)}
+.badge.warn{border-color:var(--yellow);color:var(--yellow)}
+.badge.err{border-color:var(--red);color:var(--red)}
+#conn-dot{width:7px;height:7px;border-radius:50%;background:var(--sub);display:inline-block;margin-right:4px;transition:.3s}
+#conn-dot.connected{background:var(--green)}
+.layout{display:grid;grid-template-columns:260px 1fr 300px;grid-template-rows:auto 1fr;gap:12px;padding:12px;height:calc(100vh - 48px);overflow:hidden}
+
+/* ── Auto-detect bar ── */
+.autobar{grid-column:1/-1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 16px;display:flex;align-items:center;gap:16px;flex-shrink:0}
+.autobar h3{font-size:.8rem;color:var(--sub);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+.toggle-wrap{display:flex;align-items:center;gap:8px}
+.toggle{position:relative;width:40px;height:22px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:#30363d;border-radius:22px;transition:.2s}
+.slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.2s}
+input:checked+.slider{background:var(--green)}
+input:checked+.slider:before{transform:translateX(18px)}
+.toggle-label{font-size:.8rem;font-weight:600}
+.break-btn{padding:5px 12px;border:none;border-radius:5px;font-size:.78rem;font-weight:600;cursor:pointer;transition:.15s}
+.break-btn.red{background:#3d1515;color:var(--red);border:1px solid #5a2020}
+.break-btn.red:hover{background:#5a2020}
+.break-btn.green{background:#0d2818;color:var(--green);border:1px solid #1a5e30}
+.break-btn.green:hover{background:#1a5e30}
+.break-btn.blue{background:#0d1b2a;color:var(--accent);border:1px solid #1c3a5e}
+.break-btn.blue:hover{background:#1c3a5e}
+.err-rate-box{margin-left:auto;display:flex;align-items:center;gap:12px}
+.metric-pill{background:#1c2128;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:.78rem;text-align:center;min-width:80px}
+.metric-pill .val{font-size:1.1rem;font-weight:700}
+.metric-pill .lbl{font-size:.65rem;color:var(--sub);text-transform:uppercase}
+#auto-alert{padding:5px 12px;border-radius:5px;font-size:.78rem;font-weight:600;display:none;animation:flash 1s ease-in-out 3}
+@keyframes flash{0%,100%{opacity:1}50%{opacity:.3}}
+#auto-alert.show{display:inline-block;background:#1a1a00;border:1px solid var(--yellow);color:var(--yellow)}
+
+/* ── Left panel: scenarios ── */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:flex;flex-direction:column}
+.panel-hdr{padding:10px 14px;font-size:.75rem;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--border);flex-shrink:0}
+.panel-body{flex:1;overflow-y:auto;padding:10px}
+.sc-card{padding:9px 11px;border:1px solid var(--border);border-radius:6px;margin-bottom:7px;cursor:pointer;transition:.15s}
+.sc-card:hover{border-color:var(--accent);background:#1c2128}
+.sc-card.active{border-color:var(--accent);background:#1c2128}
+.sc-card.running{border-color:var(--yellow);animation:pulse .8s ease-in-out infinite alternate}
+@keyframes pulse{from{box-shadow:0 0 0 rgba(227,179,65,.2)}to{box-shadow:0 0 8px rgba(227,179,65,.3)}}
+.sc-icon{font-size:1.2rem;margin-bottom:3px}
+.sc-name{font-size:.82rem;font-weight:600;margin-bottom:2px}
+.sc-desc{font-size:.7rem;color:var(--sub);line-height:1.3}
+.sc-sev{display:inline-block;padding:1px 6px;border-radius:8px;font-size:.67rem;margin-top:3px}
+.sc-sev.high{background:#7c2e2e;color:#f85149}.sc-sev.critical{background:#5a1c1c;color:#ff9090}
+
+/* ── Middle ── */
+.mid{display:flex;flex-direction:column;gap:10px;overflow:hidden;min-height:0}
+.condition-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;flex-shrink:0}
+.condition-box h3{font-size:.72rem;color:var(--sub);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+#cond-name{font-size:.9rem;font-weight:600;color:var(--yellow)}
+#cond-detail{font-size:.74rem;color:var(--sub);line-height:1.4;margin-top:2px}
+.pipeline-panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;flex:1;min-height:0;display:flex;flex-direction:column}
+#pipeline-svg{flex:1}
+.charts-row{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px;flex-shrink:0;max-height:160px}
+.chart-wrap label{font-size:.68rem;color:var(--sub);display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em}
+.chart-wrap canvas{max-height:110px}
+
+/* ── Right: log ── */
+.log-panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;overflow:hidden}
+#log-list{flex:1;overflow-y:auto;padding:7px}
+.log-item{padding:5px 7px;border-radius:3px;margin-bottom:3px;font-size:.7rem;line-height:1.4;border-left:2px solid transparent}
+.log-item.info{border-color:var(--accent);background:#0d1b2a}
+.log-item.success{border-color:var(--green);background:#0d1f15}
+.log-item.warn{border-color:var(--yellow);background:#1e1a0e}
+.log-item.error{border-color:var(--red);background:#1e0d0d}
+.log-item.event{border-color:var(--purple);background:#140e1e}
+.log-item.auto{border-color:var(--orange);background:#1e1200}
+.log-ts{color:var(--sub);font-size:.62rem}
+/* SVG nodes */
+.agent-node{fill:#1c2128;stroke:#30363d;stroke-width:1.5}
+.agent-node.running{stroke:#e3b341;stroke-width:2;fill:#1e1a0e}
+.agent-node.done{stroke:#3fb950;stroke-width:2;fill:#0d1f0d}
+.agent-node.failed{stroke:#f85149;stroke-width:2;fill:#1e0d0d}
+.agent-label{fill:#e6edf3;font-size:10px;font-family:'Segoe UI',sans-serif;text-anchor:middle;dominant-baseline:middle}
+.ctrl-label{fill:#8b949e;font-size:9px;font-family:'Segoe UI',sans-serif;text-anchor:middle;dominant-baseline:middle;letter-spacing:.04em}
+.edge{stroke:#30363d;stroke-width:1.5;fill:none}
+.edge.active{stroke:#58a6ff;stroke-width:2}
+
+/* ── Repo-connected auto-remediation panels ── */
+/* Repo connect */
+.repo-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.input-field { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border, #444); background: var(--bg-secondary, #1e1e1e); color: var(--text, #fff); flex: 1; min-width: 200px; }
+.status-badge { padding: 4px 12px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
+.status-idle { background: #555; color: #ccc; }
+.status-connected { background: #1a5c2e; color: #4ade80; }
+.status-error { background: #5c1a1a; color: #f87171; }
+.btn { padding: 8px 16px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; transition: .2s; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #4a8fd8; }
+.btn-success { background: var(--green); color: #fff; }
+.btn-success:hover { background: #2f8c40; }
+.btn-danger { background: var(--red); color: #fff; }
+.btn-danger:hover { background: #d63f38; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Log output */
+.log-output { background: #0d0d0d; border-radius: 6px; padding: 12px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.82em; color: #aaa; }
+.log-line-error { color: #f87171; }
+.log-line-info { color: #60a5fa; }
+.log-controls { display: flex; gap: 8px; margin-bottom: 12px; }
+
+/* Diff viewer */
+.diff-viewer { background: #0d0d0d; border-radius: 6px; padding: 12px; min-height: 120px; font-family: monospace; font-size: 0.82em; overflow-x: auto; }
+.diff-viewer pre { margin: 0; white-space: pre-wrap; }
+.diff-add { color: #4ade80; }
+.diff-remove { color: #f87171; }
+.diff-header { color: #60a5fa; font-weight: bold; }
+
+/* Tree output */
+.tree-output { font-family: monospace; font-size: 0.85em; color: #c4b5fd; padding: 8px; min-height: 80px; }
+.tree-node { padding: 3px 0 3px 16px; border-left: 2px solid #6d28d9; margin-left: 8px; }
+.tree-node-root { padding-left: 0; border-left: none; font-weight: bold; }
+
+/* Summary output */
+.summary-output { font-size: 0.9em; color: #e5e7eb; }
+.summary-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #333; }
+.summary-label { color: #9ca3af; }
+.summary-value { font-weight: bold; }
+
+/* Diff actions */
+.diff-actions { margin-top: 12px; display: flex; gap: 8px; }
+
+/* placeholder */
+.placeholder-text { color: #555; font-style: italic; }
+
+/* New panels styling */
+#panel-repo-connect h2, #panel-log-stream h2, #panel-diff-viewer h2, #panel-reasoning-tree h2, #panel-exec-summary h2 { 
+  padding: 12px 16px; 
+  font-size: 0.9rem; 
+  font-weight: 600; 
+  border-bottom: 1px solid var(--border); 
+  margin: 0; 
+}
+#panel-repo-connect .repo-form, #panel-log-stream .log-controls, #panel-log-stream .log-output,
+#panel-diff-viewer .diff-viewer, #panel-diff-viewer .diff-actions,
+#panel-reasoning-tree .tree-output, #panel-exec-summary .summary-output { 
+  padding: 12px 16px; 
+}
+</style>
+</head>
+<body>
+<header>
+  <span id="conn-dot"></span>
+  <h1>⚡ OpsAgents — Autonomous Incident Response</h1>
+  <span class="badge" id="conn-badge">Connecting…</span>
+  <span class="badge" id="run-badge" style="display:none"></span>
+  <span id="auto-alert">🚨 AUTO-DETECTED — OpsAgents triggered!</span>
+</header>
+
+<div class="layout">
+
+  <!-- Auto-detect control bar -->
+  <div class="autobar">
+    <h3>🔍 Auto-Detect</h3>
+    <div class="toggle-wrap">
+      <label class="toggle"><input type="checkbox" id="auto-toggle" onchange="toggleAutoDetect(this.checked)"/><span class="slider"></span></label>
+      <span class="toggle-label" id="auto-label">OFF</span>
+    </div>
+    <span style="color:var(--sub);font-size:.75rem">|  Break EPG service:</span>
+    <button class="break-btn red"    onclick="breakEpg('null-pointer')">🐛 Null Pointer</button>
+    <button class="break-btn red"    onclick="breakEpg('upstream-down')">🔌 Upstream Down</button>
+    <button class="break-btn red"    onclick="breakEpg('pool-exhausted')">🗄️ Pool Exhausted</button>
+    <button class="break-btn red"    onclick="breakEpg('config-missing')">⚙️ Config Missing</button>
+    <button class="break-btn red"    onclick="breakEpg('cpu-stress')">💥 CPU Stress</button>
+    <button class="break-btn green"  onclick="breakEpg('normal')">✅ Restore</button>
+    <div class="err-rate-box">
+      <div class="metric-pill"><div class="val" id="m-total">0</div><div class="lbl">Requests</div></div>
+      <div class="metric-pill"><div class="val" id="m-errors" style="color:var(--red)">0</div><div class="lbl">Errors</div></div>
+      <div class="metric-pill"><div class="val" id="m-rate" style="color:var(--yellow)">0%</div><div class="lbl">Error Rate</div></div>
+      <div class="metric-pill"><div class="val" id="m-p99">0ms</div><div class="lbl">p99</div></div>
+    </div>
+  </div>
+
+  <!-- Left: Scenarios -->
+  <div class="panel">
+    <div class="panel-hdr">Manual Scenarios</div>
+    <div class="panel-body" id="scenario-list">Loading…</div>
+  </div>
+
+  <!-- Middle -->
+  <div class="mid">
+    <div class="condition-box">
+      <h3>Detected Condition</h3>
+      <div id="cond-name">Waiting for errors…</div>
+      <div id="cond-detail"></div>
+    </div>
+    <div class="pipeline-panel">
+      <div class="panel-hdr" style="flex-shrink:0">Agent Pipeline</div>
+      <svg id="pipeline-svg" viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg">
+        <rect class="agent-node" id="node-trigger"    x="290" y="8"   width="100" height="30" rx="6"/>
+        <text class="agent-label" x="340" y="24">🔔 Trigger</text>
+        <line class="edge" x1="340" y1="38" x2="340" y2="58"/>
+        <rect class="agent-node" id="node-meta"       x="255" y="58"  width="170" height="26" rx="4"/>
+        <text class="ctrl-label" x="340" y="72">META CONTROLLER</text>
+        <line class="edge" x1="340" y1="84" x2="340" y2="104"/>
+        <rect class="agent-node" id="node-incident"   x="195" y="104" width="290" height="26" rx="4"/>
+        <text class="ctrl-label" x="340" y="118">INCIDENT CONTROLLER</text>
+        <!-- Agents row -->
+        <line class="edge" id="e-ii"  x1="210" y1="130" x2="70"  y2="152"/>
+        <line class="edge" id="e-rc"  x1="265" y1="130" x2="195" y2="152"/>
+        <line class="edge" id="e-cf"  x1="320" y1="130" x2="320" y2="152"/>
+        <line class="edge" id="e-ra"  x1="380" y1="130" x2="435" y2="152"/>
+        <line class="edge" id="e-rem" x1="440" y1="130" x2="560" y2="152"/>
+        <rect class="agent-node" id="node-issue-identification"  x="10"  y="152" width="120" height="28" rx="5"/>
+        <text class="agent-label" x="70"  y="167">🔍 Issue ID</text>
+        <rect class="agent-node" id="node-root-cause"            x="143" y="152" width="104" height="28" rx="5"/>
+        <text class="agent-label" x="195" y="167">🌳 Root Cause</text>
+        <rect class="agent-node" id="node-code-fix"              x="260" y="152" width="120" height="28" rx="5"/>
+        <text class="agent-label" x="320" y="167">🛠 Code Fix</text>
+        <rect class="agent-node" id="node-risk-assessment"       x="393" y="152" width="120" height="28" rx="5"/>
+        <text class="agent-label" x="453" y="167">⚠️ Risk</text>
+        <rect class="agent-node" id="node-remediation"           x="519" y="152" width="110" height="28" rx="5"/>
+        <text class="agent-label" x="574" y="167">💊 Remediation</text>
+        <!-- Row 2 -->
+        <line class="edge" x1="195" y1="180" x2="180" y2="215"/>
+        <line class="edge" x1="320" y1="180" x2="340" y2="215"/>
+        <line class="edge" x1="453" y1="180" x2="500" y2="215"/>
+        <rect class="agent-node" id="node-reporting"              x="110" y="215" width="110" height="28" rx="5"/>
+        <text class="agent-label" x="165" y="230">📊 Reporting</text>
+        <rect class="agent-node" id="node-executive-communication" x="265" y="215" width="150" height="28" rx="5"/>
+        <text class="agent-label" x="340" y="230">📣 Exec Comms</text>
+        <rect class="agent-node" id="node-escalation"             x="448" y="215" width="120" height="28" rx="5" opacity=".4"/>
+        <text class="agent-label" id="esc-lbl" x="508" y="230" fill="#8b949e">🚨 Escalation</text>
+        <text id="duration-label" x="340" y="278" fill="#8b949e" font-size="10" text-anchor="middle"></text>
+      </svg>
+    </div>
+    <div class="charts-row">
+      <div class="chart-wrap"><label>Error Rate %</label><canvas id="chart-error"></canvas></div>
+      <div class="chart-wrap"><label>p99 Latency ms</label><canvas id="chart-latency"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Right: log -->
+  <div class="log-panel">
+    <div class="panel-hdr">Live Events</div>
+    <div id="log-list"></div>
+  </div>
+
+</div>
+
+<!-- New panels for repo-connected auto-remediation -->
+<div style="padding: 12px; display: flex; flex-direction: column; gap: 12px;">
+
+  <!-- Panel 1: Repo Connect Bar -->
+  <div class="panel" id="panel-repo-connect">
+    <h2>🔗 Repo-Connected Auto-Remediation</h2>
+    <div class="repo-form">
+      <input id="repo-url" type="text" placeholder="https://github.com/owner/repo" class="input-field" />
+      <input id="clone-dir" type="text" placeholder="/tmp/opsagents-clone" class="input-field" />
+      <input id="repo-branch" type="text" placeholder="main (optional)" class="input-field" />
+      <button id="btn-connect-repo" class="btn btn-primary" onclick="connectRepo()">Connect Repo</button>
+      <span id="repo-status-badge" class="status-badge status-idle">Not Connected</span>
+    </div>
+  </div>
+
+  <!-- Panel 2: Log Stream -->
+  <div class="panel" id="panel-log-stream">
+    <h2>📋 Live Log Stream</h2>
+    <div class="log-controls">
+      <button id="btn-start-watch" class="btn btn-success" onclick="startWatching()" disabled>Start Watching</button>
+      <button id="btn-stop-watch" class="btn btn-danger" onclick="stopWatching()" disabled>Stop Watching</button>
+    </div>
+    <div id="log-stream-output" class="log-output"></div>
+  </div>
+
+  <!-- Panel 3: Diff Viewer -->
+  <div class="panel" id="panel-diff-viewer">
+    <h2>🔧 Auto-Patch Diff Viewer</h2>
+    <div id="diff-viewer-content" class="diff-viewer">
+      <p class="placeholder-text">Waiting for patch suggestions…</p>
+    </div>
+    <div class="diff-actions" style="display:none" id="diff-actions">
+      <button class="btn btn-success" onclick="pushPR()">✅ Approve &amp; Push PR</button>
+      <button class="btn btn-danger" onclick="rejectPatch()">❌ Reject Patch</button>
+    </div>
+  </div>
+
+  <!-- Panel 4: Reasoning Tree -->
+  <div class="panel" id="panel-reasoning-tree">
+    <h2>🧠 Agent Reasoning Tree</h2>
+    <div id="reasoning-tree-output" class="tree-output"></div>
+  </div>
+
+  <!-- Panel 5: Executive Summary -->
+  <div class="panel" id="panel-exec-summary">
+    <h2>📊 Executive Summary</h2>
+    <div id="exec-summary-output" class="summary-output">
+      <p class="placeholder-text">No incidents yet.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── SSE connection ───────────────────────────────────────────────────────────
+const clientId = 'ui-' + Math.random().toString(36).slice(2, 9);
+let es = null;
+
+function connect() {
+  es = new EventSource('/api/stream/' + clientId);
+  es.onopen = () => {
+    document.getElementById('conn-dot').className = 'connected';
+    document.getElementById('conn-badge').textContent = 'Live';
+    document.getElementById('conn-badge').className = 'badge live';
+  };
+  es.onerror = () => {
+    document.getElementById('conn-dot').className = '';
+    document.getElementById('conn-badge').textContent = 'Reconnecting…';
+    document.getElementById('conn-badge').className = 'badge warn';
+  };
+
+  const on = (ev, fn) => es.addEventListener(ev, e => { try { fn(JSON.parse(e.data)); } catch {} });
+
+  on('sim:start',       d => log('info', `${d.icon} ${d.scenarioName}`, `severity=${d.severity}`));
+  on('sim:setup',       d => log('info', '⚙️ Setup', d.message));
+  on('sim:condition',   d => { showCondition(d.name, d.detail); if (d.inputs?.perfLog) pushChart(d.inputs.perfLog.errorRate, d.inputs.perfLog.p99Latency); });
+  on('sim:orchestrating', d => log('info', '🚀', d.message));
+  on('sim:complete',    d => onComplete(d));
+  on('sim:error',       d => log('error', '❌ Error', d.message));
+  on('pipeline:event',  d => onPipelineEvent(d));
+  on('epg:request',     d => onEpgRequest(d));
+  on('epg:fault-changed', d => log('warn', '⚙️ EPG fault', `mode → ${d.mode}`));
+  on('epg:broken',      d => { log('error', '🔴 EPG BROKEN', d.message); document.getElementById('conn-badge').className = 'badge err'; document.getElementById('conn-badge').textContent = `FAULT: ${d.mode}`; });
+  on('auto:detected',   d => onAutoDetected(d));
+  on('auto:orchestrating', d => { log('auto', '🤖 AUTO-TRIGGER', d.message); showAutoAlert(); showCondition(d.message, `severity=${d.severity} | auto-detected`); });
+  on('auto:skipped',    d => log('warn', '⏭ Skipped', d.message));
+  on('watchdog:toggled', d => log('info', d.enabled ? '🔍 Auto-detect ON' : '🔕 Auto-detect OFF', ''));
+  on('watchdog:state',  d => updateMetrics(d));
+  on('process:crash',   d => log('error', `💥 ${d.type}`, d.message));
+  on('error',           d => log('error', '❌', d.message));
+  
+  // Repo-connected auto-remediation events
+  on('log:error', d => appendLog(`🔴 ${d.errorType ?? 'Error'}: ${d.message ?? JSON.stringify(d)}`, 'error'));
+  on('repo:connecting', d => appendLog(`🔗 Connecting to ${d.repoUrl}…`, 'info'));
+  on('repo:connected', d => appendLog(`✅ Repo connected, language: ${d.language}`, 'info'));
+  on('repo:log-discovered', d => appendLog(`📄 Log file discovered: ${d.path}`, 'info'));
+  on('patch:ready', d => { appendLog(`🩹 Patch ready: ${d.branchName}`, 'info'); renderDiff(d.diff); });
+  on('patch:pushed', d => appendLog(`🚀 Patch pushed to ${d.branchName}`, 'info'));
+  on('remediation:applied', d => appendLog(`🤖 Remediation: ${d.summary ?? 'applied'}`, 'info'));
+  on('reasoning:tree', d => renderReasoningTree(d.steps));
+  on('exec:summary', d => renderExecSummary(d));
+}
+
+// ─── Auto-detect controls ─────────────────────────────────────────────────────
+function toggleAutoDetect(enabled) {
+  fetch('/epg/auto-detect', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ enabled }) });
+  document.getElementById('auto-label').textContent = enabled ? 'ON' : 'OFF';
+}
+
+async function breakEpg(mode) {
+  resetPipeline();
+  if (mode === 'normal') {
+    await fetch('/epg/fault', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ mode }) });
+    document.getElementById('conn-badge').className = 'badge live';
+    document.getElementById('conn-badge').textContent = 'Live';
+    showCondition('Service restored', 'EPG fault mode reset to normal');
+    log('success', '✅ EPG Restored', 'fault mode → normal');
+  } else {
+    const r = await fetch('/epg/break', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ mode }) });
+    const d = await r.json();
+    log('warn', `🔴 Break: ${mode}`, d.message);
+    showCondition(`EPG broken: ${mode}`, 'Auto-detect will fire OpsAgents once threshold is crossed');
+    if (document.getElementById('auto-toggle').checked) {
+      log('auto', '⏳ Watchdog watching…', `threshold: ≥5 errors OR ≥25% rate in 60s`);
+    }
+  }
+}
+
+// ─── EPG request tracking ─────────────────────────────────────────────────────
+function onEpgRequest(d) {
+  updateMetrics(d.metrics);
+  const ok = d.statusCode < 400;
+  pushChart(d.metrics.errorRate * 100, d.metrics.p99);
+  if (!ok) log('warn', `${d.statusCode} ${d.path}`, `${d.ms}ms — ${d.faultMode}`);
+}
+
+function onAutoDetected(d) {
+  showAutoAlert();
+  log('auto', '🚨 AUTO-DETECTED', `${d.errorCount}/${d.totalRequests} errors (${(d.errorRate*100).toFixed(0)}%) — dominant: ${d.dominantError}`);
+  showCondition(d.message, `Watchdog trigger: ${d.triggeredBy} | dominant error: ${d.dominantError}`);
+  updateMetrics(d);
+}
+
+function updateMetrics(m) {
+  if (!m) return;
+  document.getElementById('m-total').textContent = m.totalRequests ?? 0;
+  document.getElementById('m-errors').textContent = m.errorCount ?? 0;
+  const rate = ((m.errorRate ?? 0) * 100).toFixed(0);
+  const rateEl = document.getElementById('m-rate');
+  rateEl.textContent = rate + '%';
+  rateEl.style.color = m.errorRate > 0.5 ? 'var(--red)' : m.errorRate > 0.1 ? 'var(--yellow)' : 'var(--green)';
+  document.getElementById('m-p99').textContent = (m.p99 ?? 0) + 'ms';
+}
+
+// ─── Pipeline events ──────────────────────────────────────────────────────────
+function onPipelineEvent(d) {
+  const ev = d.event || '';
+  const p  = d.payload || {};
+  if (ev.endsWith(':agent-started'))    { highlightNode(p.agentId || p.id || ev, 'running'); log('event', '→ started', (p.agentId || ev).toString()); }
+  else if (ev.endsWith(':agent-completed')) { highlightNode(p.agentId || p.id || ev, 'done');    log('success', '✓ done',    (p.agentId || ev).toString()); }
+  else if (ev.endsWith(':agent-failed'))    { highlightNode(p.agentId || p.id || ev, 'failed');  log('error', '✗ failed',  (p.agentId || ev).toString()); }
+  else if (ev.includes('controller-started'))   { highlightNode('meta', 'running'); log('event', '→ controller', p.controllerId || ev); }
+  else if (ev.includes('controller-completed')) { highlightNode('meta', 'done');    log('success', '✓ controller', p.controllerId || ev); }
+  else log('event', ev.split(':').pop(), JSON.stringify(p).slice(0, 100));
+}
+
+function onComplete(d) {
+  document.getElementById('duration-label').textContent = `Pipeline: ${d.durationMs}ms | source: ${d.source || 'manual'}`;
+  showRunBadge(`✓ Done (${d.durationMs}ms)`, 'live');
+  log('success', '🏁 Complete', `${d.durationMs}ms — ${d.source || ''}`);
+  document.getElementById('run-badge').style.display = '';
+}
+
+// ─── Manual scenario picker ───────────────────────────────────────────────────
+async function loadScenarios() {
+  try {
+    const r = await fetch('/api/scenarios');
+    const scenarios = await r.json();
+    const list = document.getElementById('scenario-list');
+    list.innerHTML = '';
+    for (const s of scenarios) {
+      const card = document.createElement('div');
+      card.className = 'sc-card'; card.id = 'sc-' + s.id;
+      card.innerHTML = `<div class="sc-icon">${s.icon}</div><div class="sc-name">${s.name}</div><div class="sc-desc">${s.description}</div><span class="sc-sev ${s.severity}">${s.severity.toUpperCase()}</span>`;
+      card.onclick = () => runScenario(s.id);
+      list.appendChild(card);
+    }
+  } catch { document.getElementById('scenario-list').textContent = '⚠️ Cannot reach server'; }
+}
+
+async function runScenario(scenarioId) {
+  resetPipeline();
+  document.querySelectorAll('.sc-card').forEach(c => c.classList.remove('active','running'));
+  const el = document.getElementById('sc-' + scenarioId);
+  if (el) el.className = 'sc-card running';
+  showRunBadge('Running…', 'warn');
+  const r = await fetch('/api/simulate', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ scenarioId, clientId }) });
+  const d = await r.json();
+  if (!d.ok) log('error', '❌', d.error);
+}
+
+// ─── Charts ───────────────────────────────────────────────────────────────────
+let errChart, latChart;
+const errData = [], latData = [], labels = [];
+function initCharts() {
+  const c = (lbl, col, data) => ({
+    type: 'bar',
+    data: { labels, datasets: [{ label: lbl, data, backgroundColor: col, borderRadius: 3 }] },
+    options: { animation: false, plugins: { legend: { display: false } }, scales: {
+      x: { ticks: { color: '#8b949e', font: { size: 8 } }, grid: { color: '#21262d' } },
+      y: { ticks: { color: '#8b949e', font: { size: 8 } }, grid: { color: '#21262d' } }
+    }}
+  });
+  errChart = new Chart(document.getElementById('chart-error'), c('Err%', '#f85149aa', errData));
+  latChart = new Chart(document.getElementById('chart-latency'), c('p99', '#58a6ffaa', latData));
+}
+function pushChart(err, lat) {
+  const ts = new Date().toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  if (labels.length > 30) { labels.shift(); errData.shift(); latData.shift(); }
+  labels.push(ts); errData.push(err); latData.push(lat);
+  errChart.update(); latChart.update();
+}
+
+// ─── Pipeline node helpers ────────────────────────────────────────────────────
+const NODE_MAP = {
+  'issue-identification':'node-issue-identification','root-cause':'node-root-cause',
+  'root-cause-analysis':'node-root-cause','code-fix':'node-code-fix',
+  'risk-assessment':'node-risk-assessment','remediation':'node-remediation',
+  'reporting':'node-reporting','executive-communication':'node-executive-communication',
+  'escalation':'node-escalation','meta':'node-meta','incident':'node-incident',
+};
+function highlightNode(id, state) {
+  let nid = NODE_MAP[id];
+  if (!nid) for (const [k,v] of Object.entries(NODE_MAP)) if (id.includes(k)) { nid=v; break; }
+  if (!nid) return;
+  const el = document.getElementById(nid);
+  if (el) el.className.baseVal = 'agent-node ' + state;
+}
+function resetPipeline() {
+  document.querySelectorAll('.agent-node').forEach(el => el.className.baseVal = 'agent-node');
+  document.getElementById('duration-label').textContent = '';
+  document.getElementById('log-list').innerHTML = '';
+}
+
+// ─── UI helpers ───────────────────────────────────────────────────────────────
+function showCondition(name, detail) {
+  document.getElementById('cond-name').textContent = name;
+  document.getElementById('cond-detail').textContent = detail || '';
+}
+function showAutoAlert() {
+  const el = document.getElementById('auto-alert');
+  el.className = 'show';
+  setTimeout(() => el.className = '', 6000);
+}
+function showRunBadge(text, cls) {
+  const b = document.getElementById('run-badge');
+  b.textContent = text; b.className = 'badge ' + cls; b.style.display = '';
+}
+function log(type, title, detail) {
+  const list = document.getElementById('log-list');
+  const el = document.createElement('div');
+  el.className = 'log-item ' + type;
+  const ts = new Date().toLocaleTimeString('en',{hour12:false});
+  el.innerHTML = `<span class="log-ts">${ts}</span> <strong>${title}</strong> <span style="color:var(--sub)">${String(detail).slice(0,140)}</span>`;
+  list.appendChild(el);
+  list.scrollTop = list.scrollHeight;
+}
+
+// ─── Repo Connect ───────────────────────────────────────────
+async function connectRepo() {
+  const repoUrl = document.getElementById('repo-url').value.trim();
+  const cloneDir = document.getElementById('clone-dir').value.trim();
+  const branch = document.getElementById('repo-branch').value.trim() || undefined;
+  if (!repoUrl || !cloneDir) { alert('Repo URL and clone dir are required'); return; }
+  
+  setBadge('repo-status-badge', 'status-idle', 'Connecting…');
+  try {
+    const r = await fetch('/api/connect-repo', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ repoUrl, cloneDir, branch })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error);
+    setBadge('repo-status-badge', 'status-connected', `Connected (${data.result.language})`);
+    document.getElementById('btn-start-watch').disabled = false;
+    // pre-fill log paths for UI convenience
+    window._discoveredLogPaths = data.result.logPaths;
+    window._repoLanguage = data.result.language;
+    appendLog(`✅ Connected to ${repoUrl} [${data.result.language}] — ${data.result.logPaths.length} log(s) discovered`, 'info');
+  } catch (e) {
+    setBadge('repo-status-badge', 'status-error', 'Error');
+    appendLog(`❌ Connect failed: ${e.message}`, 'error');
+  }
+}
+
+async function startWatching() {
+  const logPaths = window._discoveredLogPaths ?? [];
+  const language = window._repoLanguage ?? 'unknown';
+  const r = await fetch('/api/start-watching', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ logPaths, language })
+  });
+  const data = await r.json();
+  if (r.ok) {
+    appendLog(`👁 Watching ${data.watching.length} log file(s)`, 'info');
+    document.getElementById('btn-start-watch').disabled = true;
+    document.getElementById('btn-stop-watch').disabled = false;
+  }
+}
+
+async function stopWatching() {
+  await fetch('/api/stop-watching', { method: 'POST' });
+  appendLog('⏹ Stopped watching', 'info');
+  document.getElementById('btn-start-watch').disabled = false;
+  document.getElementById('btn-stop-watch').disabled = true;
+}
+
+async function pushPR() {
+  const r = await fetch('/api/push-pr', { method: 'POST' });
+  const data = await r.json();
+  if (r.ok) {
+    appendLog(`🚀 PR pushed: branch ${data.patch?.branchName ?? 'unknown'}`, 'info');
+    document.getElementById('diff-actions').style.display = 'none';
+    document.getElementById('diff-viewer-content').innerHTML = '<p class="placeholder-text">Patch submitted.</p>';
+  }
+}
+
+async function rejectPatch() {
+  appendLog('🗑 Patch rejected', 'info');
+  document.getElementById('diff-actions').style.display = 'none';
+  document.getElementById('diff-viewer-content').innerHTML = '<p class="placeholder-text">Patch rejected.</p>';
+}
+
+function setBadge(id, cls, text) {
+  const el = document.getElementById(id);
+  el.className = `status-badge ${cls}`;
+  el.textContent = text;
+}
+
+function appendLog(msg, level = 'info') {
+  const out = document.getElementById('log-stream-output');
+  const line = document.createElement('div');
+  line.className = `log-line-${level}`;
+  line.textContent = `[${new Date().toISOString().slice(11,19)}] ${msg}`;
+  out.appendChild(line);
+  out.scrollTop = out.scrollHeight;
+}
+
+function renderDiff(diff) {
+  const viewer = document.getElementById('diff-viewer-content');
+  const lines = (diff ?? '').split('\n').map(line => {
+    if (line.startsWith('---') || line.startsWith('+++')) return `<span class="diff-header">${escHtml(line)}</span>`;
+    if (line.startsWith('+')) return `<span class="diff-add">${escHtml(line)}</span>`;
+    if (line.startsWith('-')) return `<span class="diff-remove">${escHtml(line)}</span>`;
+    return escHtml(line);
+  });
+  viewer.innerHTML = `<pre>${lines.join('\n')}</pre>`;
+  document.getElementById('diff-actions').style.display = 'flex';
+}
+
+function renderReasoningTree(steps) {
+  const out = document.getElementById('reasoning-tree-output');
+  if (!steps?.length) { out.innerHTML = '<span>No steps yet</span>'; return; }
+  out.innerHTML = steps.map((s, i) =>
+    `<div class="tree-node ${i===0?'tree-node-root':''}">▶ ${escHtml(String(s?.agentId ?? s?.type ?? s))}</div>`
+  ).join('');
+}
+
+function renderExecSummary(data) {
+  const out = document.getElementById('exec-summary-output');
+  out.innerHTML = `
+    <div class="summary-row"><span class="summary-label">Summary</span><span class="summary-value">${escHtml(data.summary ?? '')}</span></div>
+    <div class="summary-row"><span class="summary-label">Human Review Required</span><span class="summary-value">${data.requiresHumanReview ? '⚠️ Yes' : '✅ No'}</span></div>
+  `;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+initCharts();
+connect();
+loadScenarios();
+</script>
+</body>
+</html>
