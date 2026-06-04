@@ -132,7 +132,7 @@ export class PatchAgent {
     return lines.join('\n');
   }
 
-  private computeDiff(original: string, patched: string, filePath: string): string {
+  computeDiff(original: string, patched: string, filePath: string): string {
     const origLines = original.split('\n');
     const patchedLines = patched.split('\n');
     const fileName = path.basename(filePath);
