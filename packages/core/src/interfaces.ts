@@ -67,6 +67,7 @@ export interface ServiceInputs {
   errorRecord?: ErrorRecord;  // populated by LogWatcher when watching a real log
   repoCloneDir?: string;      // absolute path to local clone (set by RepoConnector)
   repoLanguage?: string;      // detected language (set by RepoConnector)
+  metadata?: Record<string, unknown>;  // arbitrary scenario metadata
 }
 
 // ── Agent Context & Result ───────────────────────────────────────────────────
