@@ -20,10 +20,12 @@ export interface MonitorInput {
     customMetrics?: Record<string, number>;
 }
 export interface MachineParamsInput {
-    instanceType: string;
-    region: string;
-    availabilityZone: string;
-    nodeCount: number;
+    cpuPercent: number;
+    memoryPercent: number;
+    instanceType?: string;
+    region?: string;
+    availabilityZone?: string;
+    nodeCount?: number;
     tags?: Record<string, string>;
 }
 export interface IncidentInput {
@@ -41,6 +43,7 @@ export interface ServiceInputs {
     monitors?: MonitorInput;
     machineParams?: MachineParamsInput;
     incident?: IncidentInput;
+    codeRepo?: string;
 }
 export interface AgentContext {
     sessionId: string;

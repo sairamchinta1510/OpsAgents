@@ -1,5 +1,16 @@
 export * from './issue-identification.js';
 export * from './root-cause-analysis.js';
+export { CodeFixAgent } from './code-fix.js';
+export type { ShellRunner } from './code-fix.js';
 export * from './spare-tier-redundancy.js';
 export * from './escalation.js';
 export * from './reporting.js';
+export { ExecutiveCommunicationAgent } from './executive-communication.js';
+export { RepoConnector } from './repo-connector.js';
+export type { RepoConfig, RepoConnectionResult } from './repo-connector.js';
+export { LogWatcher } from './log-watcher.js';
+export type { ErrorCallback } from './log-watcher.js';
+export { PatchAgent } from './patch-agent.js';
+export type { PatchInput, PatchResult } from './patch-agent.js';
+export { AutoRemediationAgent } from './auto-remediation.js';
+export type { RemediationAction, RemediationResult } from './auto-remediation.js';

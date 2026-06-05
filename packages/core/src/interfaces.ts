@@ -43,6 +43,18 @@ export interface IncidentInput {
   timestamp: number;
 }
 
+export interface ErrorRecord {
+  ts: number;
+  errorType: string;       // e.g. "TypeError", "NullPointerException", "segfault"
+  message: string;
+  file?: string;           // absolute path inside clone dir
+  line?: number;
+  column?: number;
+  stackTrace: string[];
+  logFile: string;         // absolute path of the log file it came from
+  language: string;        // "typescript" | "java" | "python" | "c" | "unknown"
+}
+
 export interface ServiceInputs {
   serviceId: string;
   timestamp: number;
@@ -51,6 +63,11 @@ export interface ServiceInputs {
   monitors?: MonitorInput;
   machineParams?: MachineParamsInput;
   incident?: IncidentInput;
+  codeRepo?: string;          // e.g. "owner/repo-name"
+  errorRecord?: ErrorRecord;  // populated by LogWatcher when watching a real log
+  repoCloneDir?: string;      // absolute path to local clone (set by RepoConnector)
+  repoLanguage?: string;      // detected language (set by RepoConnector)
+  metadata?: Record<string, unknown>;  // arbitrary scenario metadata
 }
 
 // ── Agent Context & Result ───────────────────────────────────────────────────

@@ -1,0 +1,9 @@
+{
+  "channel": { "id": "bbc-one", "name": "BBC One", "region": "UK" },
+  "programmes": [
+    { "channel_id": "bbc-one", "title": "BBC News at Six", "start_time": "2024-01-15T18:00:00Z", "end_time": "2024-01-15T19:00:00Z", "category": "News" },
+    { "channel_id": "bbc-one", "title": "EastEnders", "start_time": "2024-01-15T19:00:00Z", "end_time": "2024-01-15T19:30:00Z", "category": "Drama" },
+    { "channel_id": "bbc-one", "title": "Casualty", "start_time": "2024-01-15T21:00:00Z", "end_time": null, "category": "Drama" },
+    { "channel_id": "bbc-one", "title": "The Late Show", "start_time": "2024-01-15T23:00:00Z", "end_time": "2024-01-16T00:00:00Z", "category": "Entertainment" }
+  ]
+}

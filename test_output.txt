@@ -1,0 +1,240 @@
+
+> @opsagents/controllers@0.1.0 test
+> vitest run
+
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/schinta/OpsAgents/packages/controllers[39m
+
+ [32mÔ£ô[39m tests/meta-controller.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32mÔ£ô[39m monitoring/tests/monitoring-controller.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32mÔ£ô[39m deployment/tests/deployment-controller.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32mÔ£ô[39m infrastructure/tests/infrastructure-controller.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32mÔ£ô[39m incident/tests/incident-controller.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m      Tests [22m [1m[32m28 passed[39m[22m[90m (28)[39m
+[2m   Start at [22m 11:31:37
+[2m   Duration [22m 456ms[2m (transform 428ms, setup 0ms, collect 717ms, tests 21ms, environment 1ms, prepare 465ms)[22m
+
+
+> @opsagents/core@0.1.0 test
+> vitest run
+
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/schinta/OpsAgents/packages/core[39m
+
+ [32mÔ£ô[39m tests/interfaces.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32mÔ£ô[39m tests/types.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32mÔ£ô[39m tests/base-controller.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32mÔ£ô[39m tests/event-bus.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32mÔ£ô[39m tests/base-agent.test.ts [2m ([22m[2m19 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [32mÔ£ô[39m tests/agent-registry.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m6 passed[39m[22m[90m (6)[39m
+[2m      Tests [22m [1m[32m43 passed[39m[22m[90m (43)[39m
+[2m   Start at [22m 11:31:38
+[2m   Duration [22m 311ms[2m (transform 153ms, setup 0ms, collect 285ms, tests 26ms, environment 1ms, prepare 540ms)[22m
+
+
+> @opsagents/integration@0.1.0 test
+> vitest run
+
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/schinta/OpsAgents/packages/integration[39m
+
+ [32mÔ£ô[39m tests/infra-pipeline.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32mÔ£ô[39m tests/incident-pipeline.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32mÔ£ô[39m tests/deployment-pipeline.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32mÔ£ô[39m tests/lights-off-e2e.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 8[2mms[22m[39m
+ [32mÔ£ô[39m tests/monitoring-pipeline.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 169[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m      Tests [22m [1m[32m37 passed[39m[22m[90m (37)[39m
+[2m   Start at [22m 11:31:39
+[2m   Duration [22m 566ms[2m (transform 369ms, setup 1ms, collect 748ms, tests 191ms, environment 1ms, prepare 423ms)[22m
+
+
+> @opsagents/runtime@0.1.0 test
+> vitest run
+
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/schinta/OpsAgents/packages/runtime[39m
+
+ [32mÔ£ô[39m tests/agent-server.test.ts [2m ([22m[2m10 tests[22m[2m)[22m[90m 54[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m10 passed[39m[22m[90m (10)[39m
+[2m   Start at [22m 11:31:41
+[2m   Duration [22m 371ms[2m (transform 65ms, setup 1ms, collect 79ms, tests 54ms, environment 0ms, prepare 78ms)[22m
+
+
+> @opsagents/sdk@0.1.0 test
+> vitest run
+
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/schinta/OpsAgents/packages/sdk[39m
+
+ [32mÔ£ô[39m tests/input-normalizer.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32mÔ£ô[39m tests/service-adapter.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m10 passed[39m[22m[90m (10)[39m
+[2m   Start at [22m 11:31:42
+[2m   Duration [22m 381ms[2m (transform 129ms, setup 0ms, collect 177ms, tests 9ms, environment 0ms, prepare 149ms)[22m
+
+
+> @opsagents/agents-deployment@0.1.0 test
+> vitest run
+
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/schinta/OpsAgents/packages/agents/deployment[39m
+
+ [32mÔ£ô[39m tests/on-demand-testing.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32mÔ£ô[39m tests/lag-indication.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32mÔ£ô[39m tests/ci-cd-governance.test.ts [2m ([22m[2m11 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32mÔ£ô[39m tests/scaffold.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[90m 2[2mms[22m[39m
+ [32mÔ£ô[39m tests/deployment-validation.test.ts [2m ([22m[2m10 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m      Tests [22m [1m[32m34 passed[39m[22m[90m (34)[39m
+[2m   Start at [22m 11:31:43
+[2m   Duration [22m 338ms[2m (transform 190ms, setup 0ms, collect 426ms, tests 16ms, environment 2ms, prepare 445ms)[22m
+
+
+> @opsagents/agents-infrastructure@0.1.0 test
+> vitest run
+
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/schinta/OpsAgents/packages/agents/infrastructure[39m
+
+ [32mÔ£ô[39m tests/cost-optimization.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32mÔ£ô[39m tests/security-compliance.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32mÔ£ô[39m tests/knowledge-graph.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32mÔ£ô[39m tests/hardware-planner.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[32m26 passed[39m[22m[90m (26)[39m
+[2m   Start at [22m 11:31:44
+[2m   Duration [22m 334ms[2m (transform 202ms, setup 0ms, collect 380ms, tests 12ms, environment 1ms, prepare 354ms)[22m
+
+
+> @opsagents/agents-monitoring@0.1.0 test
+> vitest run
+
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/schinta/OpsAgents/packages/agents/monitoring[39m
+
+ [32mÔ£ô[39m tests/health-check.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 2[2mms[22m[39m
+ [32mÔ£ô[39m tests/content-quality.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32mÔ£ô[39m tests/monitoring.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[32m19 passed[39m[22m[90m (19)[39m
+[2m   Start at [22m 11:31:45
+[2m   Duration [22m 320ms[2m (transform 108ms, setup 0ms, collect 214ms, tests 8ms, environment 0ms, prepare 251ms)[22m
+
+
+> @opsagents/agents-predictive@0.1.0 test
+> vitest run
+
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/schinta/OpsAgents/packages/agents/predictive[39m
+
+ [32mÔ£ô[39m tests/critical-metrics.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32mÔ£ô[39m tests/scaffold.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 2[2mms[22m[39m
+ [32mÔ£ô[39m tests/traffic-dial-up.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32mÔ£ô[39m tests/traffic-prediction.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[32m19 passed[39m[22m[90m (19)[39m
+[2m   Start at [22m 11:31:46
+[2m   Duration [22m 322ms[2m (transform 134ms, setup 0ms, collect 289ms, tests 11ms, environment 1ms, prepare 331ms)[22m
+
+
+> @opsagents/agents-reliability@0.1.0 test
+> vitest run
+
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/schinta/OpsAgents/packages/agents/reliability[39m
+
+ [32mÔ£ô[39m tests/issue-identification.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 2[2mms[22m[39m
+ [32mÔ£ô[39m tests/escalation.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 2[2mms[22m[39m
+ [32mÔ£ô[39m tests/reporting.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32mÔ£ô[39m tests/spare-tier-redundancy.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 2[2mms[22m[39m
+ [32mÔ£ô[39m tests/root-cause-analysis.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m      Tests [22m [1m[32m27 passed[39m[22m[90m (27)[39m
+[2m   Start at [22m 11:31:47
+[2m   Duration [22m 327ms[2m (transform 187ms, setup 0ms, collect 396ms, tests 13ms, environment 1ms, prepare 448ms)[22m
+
+
+> @opsagents/controllers-deployment@0.1.0 test
+> vitest run
+
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/schinta/OpsAgents/packages/controllers/deployment[39m
+
+ [32mÔ£ô[39m tests/deployment-controller.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 11:31:48
+[2m   Duration [22m 331ms[2m (transform 84ms, setup 0ms, collect 111ms, tests 5ms, environment 0ms, prepare 75ms)[22m
+
+
+> @opsagents/controllers-incident@0.1.0 test
+> vitest run
+
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/schinta/OpsAgents/packages/controllers/incident[39m
+
+ [32mÔ£ô[39m tests/incident-controller.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m6 passed[39m[22m[90m (6)[39m
+[2m   Start at [22m 11:31:49
+[2m   Duration [22m 340ms[2m (transform 92ms, setup 0ms, collect 124ms, tests 4ms, environment 0ms, prepare 71ms)[22m
+
+
+> @opsagents/controllers-infrastructure@0.1.0 test
+> vitest run
+
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/schinta/OpsAgents/packages/controllers/infrastructure[39m
+
+ [32mÔ£ô[39m tests/infrastructure-controller.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m6 passed[39m[22m[90m (6)[39m
+[2m   Start at [22m 11:31:50
+[2m   Duration [22m 341ms[2m (transform 81ms, setup 0ms, collect 110ms, tests 5ms, environment 0ms, prepare 72ms)[22m
+
+
+> @opsagents/controllers-monitoring@0.1.0 test
+> vitest run
+
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/schinta/OpsAgents/packages/controllers/monitoring[39m
+
+ [32mÔ£ô[39m tests/monitoring-controller.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 11:31:51
+[2m   Duration [22m 355ms[2m (transform 93ms, setup 0ms, collect 123ms, tests 5ms, environment 0ms, prepare 78ms)[22m
+
+
+> example-service@0.1.0 test
+> vitest run
+
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/schinta/OpsAgents/services/example-service[39m
+
+ [32mÔ£ô[39m tests/integration.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 3[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m   Start at [22m 11:31:52
+[2m   Duration [22m 317ms[2m (transform 69ms, setup 0ms, collect 92ms, tests 3ms, environment 0ms, prepare 80ms)[22m
+
